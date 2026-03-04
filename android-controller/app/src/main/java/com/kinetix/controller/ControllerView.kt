@@ -2,6 +2,7 @@ package com.kinetix.controller
 
 import android.content.Context
 import android.graphics.*
+import android.os.Build
 import android.os.VibrationEffect
 import android.os.Vibrator
 import android.util.AttributeSet
@@ -390,7 +391,12 @@ class ControllerView @JvmOverloads constructor(
         }
     }
 
+    @Suppress("DEPRECATION")
     private fun vibrate() {
-        vibrator?.vibrate(VibrationEffect.createOneShot(20, VibrationEffect.DEFAULT_AMPLITUDE))
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            vibrator?.vibrate(VibrationEffect.createOneShot(20, VibrationEffect.DEFAULT_AMPLITUDE))
+        } else {
+            vibrator?.vibrate(20)
+        }
     }
 }
