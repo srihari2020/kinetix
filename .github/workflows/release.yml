@@ -1,0 +1,111 @@
+# ──────────────────────────────────────────────────────────────────────
+#  Kinetix – Release (GitHub Actions)
+#  Triggers on version tags like v1.0.0
+#  Builds both APK + EXE and attaches them to the GitHub Release.
+# ──────────────────────────────────────────────────────────────────────
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+
+permissions:
+  contents: write
+
+jobs:
+  # ── Build Android APK ──────────────────────────────────────────────
+  build-android:
+    name: Build Android APK
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: "17"
+          distribution: "temurin"
+
+      - name: Cache Gradle
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: gradle-${{ hashFiles('android-controller/**/*.gradle*') }}
+
+      - name: Build release APK
+        working-directory: android-controller
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleRelease --no-daemon || ./gradlew assembleDebug --no-daemon
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-apk
+          path: android-controller/app/build/outputs/apk/*/app-*.apk
+
+  # ── Build Windows EXE ──────────────────────────────────────────────
+  build-windows:
+    name: Build Windows EXE
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        working-directory: pc-server
+        run: pip install -r requirements.txt
+
+      - name: Build EXE
+        working-directory: pc-server
+        run: pyinstaller --noconfirm kinetix-server.spec
+
+      - name: Upload EXE
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-exe
+          path: pc-server/dist/kinetix-server.exe
+
+  # ── Create GitHub Release ──────────────────────────────────────────
+  release:
+    name: Create Release
+    needs: [build-android, build-windows]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download Android APK
+        uses: actions/download-artifact@v4
+        with:
+          name: android-apk
+          path: artifacts/android
+
+      - name: Download Windows EXE
+        uses: actions/download-artifact@v4
+        with:
+          name: windows-exe
+          path: artifacts/windows
+
+      - name: Rename artifacts
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          mkdir -p release-assets
+          # Find and rename APK
+          find artifacts/android -name '*.apk' -exec cp {} "release-assets/kinetix-controller-${VERSION}.apk" \;
+          # Copy EXE
+          cp artifacts/windows/kinetix-server.exe "release-assets/kinetix-server-${VERSION}.exe"
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true
+          files: release-assets/*
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

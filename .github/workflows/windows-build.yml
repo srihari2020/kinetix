@@ -1,0 +1,51 @@
+# ──────────────────────────────────────────────────────────────────────
+#  Kinetix – Build Windows Server EXE (GitHub Actions)
+# ──────────────────────────────────────────────────────────────────────
+name: Build Windows EXE
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "pc-server/**"
+  pull_request:
+    branches: [main]
+    paths:
+      - "pc-server/**"
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build kinetix-server.exe
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Cache pip packages
+        uses: actions/cache@v4
+        with:
+          path: ~\AppData\Local\pip\Cache
+          key: pip-${{ hashFiles('pc-server/requirements.txt') }}
+          restore-keys: pip-
+
+      - name: Install dependencies
+        working-directory: pc-server
+        run: pip install -r requirements.txt
+
+      - name: Build EXE with PyInstaller
+        working-directory: pc-server
+        run: pyinstaller --noconfirm kinetix-server.spec
+
+      - name: Upload EXE artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: kinetix-server-exe
+          path: pc-server/dist/kinetix-server.exe
+          retention-days: 30

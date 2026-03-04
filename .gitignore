@@ -1,0 +1,66 @@
+# ──────────────────────────────────────────────────────────────────────
+#  Kinetix — .gitignore
+# ──────────────────────────────────────────────────────────────────────
+
+# ── OS ────────────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+Desktop.ini
+*.swp
+*.swo
+*~
+
+# ── IDE ───────────────────────────────────────────────────────────────
+.idea/
+.vscode/
+*.iml
+*.ipr
+*.iws
+.project
+.classpath
+.settings/
+*.suo
+*.user
+*.userosscache
+
+# ── Android ───────────────────────────────────────────────────────────
+android-controller/.gradle/
+android-controller/build/
+android-controller/app/build/
+android-controller/captures/
+android-controller/.externalNativeBuild/
+android-controller/.cxx/
+android-controller/local.properties
+*.apk
+*.aab
+*.ap_
+*.dex
+
+# ── Python ────────────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyo
+.venv/
+venv/
+env/
+.env
+*.egg-info/
+*.egg
+.pytest_cache/
+.mypy_cache/
+
+# ── PyInstaller ───────────────────────────────────────────────────────
+pc-server/build/
+pc-server/dist/
+*.spec.bak
+
+# ── Installer output ─────────────────────────────────────────────────
+installer/output/
+*.exe
+
+# ── Misc ──────────────────────────────────────────────────────────────
+*.log
+*.tmp
+*.bak
+node_modules/
