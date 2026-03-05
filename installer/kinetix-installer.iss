@@ -1,5 +1,5 @@
 ; ──────────────────────────────────────────────────────────────────────
-;  Kinetix PC Server – Inno Setup Installer Script
+;  Kinetix PC Server v2.0 – Inno Setup Installer Script
 ;
 ;  Prerequisites:
 ;   1. Build kinetix-server.exe first (run build.bat)
@@ -9,14 +9,14 @@
 
 [Setup]
 AppName=Kinetix Server
-AppVersion=1.0.0
+AppVersion=2.0.0
 AppPublisher=Kinetix Contributors
 AppPublisherURL=https://github.com/kinetix-controller
 DefaultDirName={autopf}\Kinetix Server
 DefaultGroupName=Kinetix Server
 UninstallDisplayIcon={app}\kinetix-server.exe
 OutputDir=output
-OutputBaseFilename=KinetixServerSetup
+OutputBaseFilename=KinetixServerSetup-v2
 Compression=lzma2
 SolidCompression=yes
 ArchitecturesInstallIn64BitMode=x64compatible
@@ -35,7 +35,7 @@ Source: "ViGEmBus_Setup_x64.msi"; DestDir: "{tmp}"; Flags: ignoreversion deletea
 
 [Icons]
 ; Desktop shortcut
-Name: "{autodesktop}\Kinetix Server"; Filename: "{app}\kinetix-server.exe"; Comment: "Launch Kinetix game controller server"
+Name: "{autodesktop}\Kinetix Server"; Filename: "{app}\kinetix-server.exe"; Comment: "Launch Kinetix wireless controller server"
 
 ; Start Menu
 Name: "{group}\Kinetix Server"; Filename: "{app}\kinetix-server.exe"
@@ -60,4 +60,3 @@ function ViGEmMsiExists(): Boolean;
 begin
   Result := FileExists(ExpandConstant('{src}\ViGEmBus_Setup_x64.msi'));
 end;
-

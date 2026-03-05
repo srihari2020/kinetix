@@ -1,100 +1,208 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="#0A0A1A"
-    android:gravity="center"
-    android:orientation="vertical"
-    android:padding="32dp">
+    android:fillViewport="true">
 
-    <!-- Logo / Title -->
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginBottom="8dp"
-        android:text="🎮"
-        android:textSize="64sp" />
-
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginBottom="4dp"
-        android:fontFamily="sans-serif-medium"
-        android:text="KINETIX"
-        android:textColor="#E94560"
-        android:textSize="36sp"
-        android:textStyle="bold"
-        android:letterSpacing="0.2" />
-
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginBottom="48dp"
-        android:fontFamily="sans-serif-light"
-        android:text="Wireless Game Controller"
-        android:textColor="#7A7A9E"
-        android:textSize="14sp" />
-
-    <!-- IP Address -->
-    <com.google.android.material.textfield.TextInputLayout
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginBottom="16dp"
-        android:hint="Server IP Address"
-        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
+        android:gravity="center_horizontal"
+        android:orientation="vertical"
+        android:padding="32dp">
 
-        <com.google.android.material.textfield.TextInputEditText
-            android:id="@+id/ip_input"
+        <!-- Header row: title + settings -->
+        <RelativeLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:inputType="text"
-            android:textColor="#FFFFFF"
-            android:textColorHint="#5A5A7E"
-            android:fontFamily="monospace"
-            android:textSize="18sp" />
-    </com.google.android.material.textfield.TextInputLayout>
+            android:layout_marginBottom="8dp">
 
-    <!-- Port -->
-    <com.google.android.material.textfield.TextInputLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginBottom="32dp"
-        android:hint="Port"
-        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_centerInParent="true"
+                android:orientation="vertical"
+                android:gravity="center">
 
-        <com.google.android.material.textfield.TextInputEditText
-            android:id="@+id/port_input"
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="🎮"
+                    android:textSize="48sp" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="sans-serif-medium"
+                    android:text="KINETIX"
+                    android:textColor="#E94560"
+                    android:textSize="32sp"
+                    android:textStyle="bold"
+                    android:letterSpacing="0.2" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="sans-serif-light"
+                    android:text="Wireless Game Controller"
+                    android:textColor="#7A7A9E"
+                    android:textSize="13sp" />
+            </LinearLayout>
+
+            <ImageButton
+                android:id="@+id/settings_btn"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:layout_alignParentEnd="true"
+                android:layout_centerVertical="true"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:src="@android:drawable/ic_menu_manage"
+                android:contentDescription="Settings"
+                android:tint="#7A7A9E" />
+        </RelativeLayout>
+
+        <!-- Profile selector -->
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:inputType="number"
-            android:text="8765"
-            android:textColor="#FFFFFF"
-            android:textColorHint="#5A5A7E"
-            android:fontFamily="monospace"
-            android:textSize="18sp" />
-    </com.google.android.material.textfield.TextInputLayout>
+            android:layout_marginTop="8dp"
+            android:layout_marginBottom="16dp"
+            android:orientation="horizontal"
+            android:gravity="center_vertical">
 
-    <!-- Connect button -->
-    <Button
-        android:id="@+id/connect_btn"
-        android:layout_width="match_parent"
-        android:layout_height="56dp"
-        android:backgroundTint="#E94560"
-        android:fontFamily="sans-serif-medium"
-        android:text="CONNECT"
-        android:textColor="#FFFFFF"
-        android:textSize="16sp"
-        android:letterSpacing="0.1" />
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Profile:"
+                android:textColor="#7A7A9E"
+                android:textSize="13sp"
+                android:layout_marginEnd="8dp" />
 
-    <!-- Status -->
-    <TextView
-        android:id="@+id/status_text"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="24dp"
-        android:fontFamily="sans-serif-light"
-        android:text="Enter the IP shown by Kinetix PC Server"
-        android:textColor="#5A5A7E"
-        android:textSize="12sp" />
+            <Spinner
+                android:id="@+id/profile_spinner"
+                android:layout_width="0dp"
+                android:layout_height="40dp"
+                android:layout_weight="1"
+                android:background="@android:drawable/btn_dropdown"
+                android:popupBackground="#1A1A2E" />
+        </LinearLayout>
 
-</LinearLayout>
+        <!-- Scan status -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical"
+            android:layout_marginBottom="8dp">
+
+            <ProgressBar
+                android:id="@+id/scan_progress"
+                style="?android:attr/progressBarStyleSmall"
+                android:layout_width="20dp"
+                android:layout_height="20dp"
+                android:layout_marginEnd="8dp"
+                android:visibility="gone" />
+
+            <TextView
+                android:id="@+id/scan_status"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:fontFamily="sans-serif-medium"
+                android:text="Scanning for servers…"
+                android:textColor="#7A7A9E"
+                android:textSize="13sp" />
+        </LinearLayout>
+
+        <!-- Server list -->
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/server_list"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="16dp"
+            android:background="#12122A"
+            android:padding="4dp"
+            android:nestedScrollingEnabled="false" />
+
+        <!-- Manual entry toggle -->
+        <TextView
+            android:id="@+id/manual_toggle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="8dp"
+            android:fontFamily="sans-serif-medium"
+            android:text="▸ Enter IP manually"
+            android:textColor="#E94560"
+            android:textSize="13sp"
+            android:clickable="true"
+            android:focusable="true" />
+
+        <!-- Manual IP section -->
+        <LinearLayout
+            android:id="@+id/manual_section"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:visibility="gone">
+
+            <com.google.android.material.textfield.TextInputLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="12dp"
+                android:hint="Server IP Address"
+                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/ip_input"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="text"
+                    android:textColor="#FFFFFF"
+                    android:textColorHint="#5A5A7E"
+                    android:fontFamily="monospace"
+                    android:textSize="16sp" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <com.google.android.material.textfield.TextInputLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="16dp"
+                android:hint="Port"
+                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/port_input"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="number"
+                    android:text="8765"
+                    android:textColor="#FFFFFF"
+                    android:textColorHint="#5A5A7E"
+                    android:fontFamily="monospace"
+                    android:textSize="16sp" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <Button
+                android:id="@+id/connect_btn"
+                android:layout_width="match_parent"
+                android:layout_height="52dp"
+                android:backgroundTint="#E94560"
+                android:fontFamily="sans-serif-medium"
+                android:text="CONNECT"
+                android:textColor="#FFFFFF"
+                android:textSize="15sp"
+                android:letterSpacing="0.1" />
+        </LinearLayout>
+
+        <!-- Status -->
+        <TextView
+            android:id="@+id/status_text"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:fontFamily="sans-serif-light"
+            android:text="Tap a server above to connect"
+            android:textColor="#5A5A7E"
+            android:textSize="12sp" />
+
+    </LinearLayout>
+</ScrollView>

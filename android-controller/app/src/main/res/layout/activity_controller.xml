@@ -28,16 +28,65 @@
         android:layout_marginEnd="24dp"
         android:layout_marginBottom="16dp" />
 
-    <!-- Connection indicator -->
-    <TextView
-        android:id="@+id/connection_indicator"
-        android:layout_width="wrap_content"
+    <!-- Top status bar -->
+    <LinearLayout
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_gravity="top|center_horizontal"
-        android:layout_marginTop="4dp"
-        android:fontFamily="sans-serif-medium"
-        android:text="● Connecting…"
-        android:textColor="#F39C12"
-        android:textSize="12sp" />
+        android:layout_gravity="top"
+        android:gravity="center_vertical"
+        android:paddingHorizontal="12dp"
+        android:paddingVertical="4dp"
+        android:orientation="horizontal">
+
+        <!-- Connection indicator -->
+        <TextView
+            android:id="@+id/connection_indicator"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:fontFamily="sans-serif-medium"
+            android:text="● Connecting…"
+            android:textColor="#F39C12"
+            android:textSize="12sp" />
+
+        <!-- Player indicator -->
+        <TextView
+            android:id="@+id/player_indicator"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="12dp"
+            android:background="#2C2C54"
+            android:paddingHorizontal="10dp"
+            android:paddingVertical="2dp"
+            android:fontFamily="sans-serif-medium"
+            android:text="P1"
+            android:textColor="#FFFFFF"
+            android:textSize="12sp"
+            android:visibility="gone" />
+
+        <!-- Battery indicator -->
+        <TextView
+            android:id="@+id/battery_indicator"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="8dp"
+            android:fontFamily="sans-serif-medium"
+            android:text="🔋 100%"
+            android:textColor="#2ECC71"
+            android:textSize="11sp"
+            android:visibility="gone" />
+
+        <!-- Gyro toggle -->
+        <ImageButton
+            android:id="@+id/gyro_toggle"
+            android:layout_width="36dp"
+            android:layout_height="36dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:src="@android:drawable/ic_menu_compass"
+            android:contentDescription="Toggle gyroscope"
+            android:tint="#E94560"
+            android:alpha="0.4" />
+
+    </LinearLayout>
 
 </FrameLayout>

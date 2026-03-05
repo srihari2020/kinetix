@@ -6,17 +6,19 @@ import okhttp3.*
 import java.util.concurrent.TimeUnit
 
 /**
- * WebSocket client that sends [ControllerState] JSON payloads to the PC server.
+ * WebSocket client for the Kinetix control channel.
  *
- * Features:
- * - Auto-reconnect with exponential backoff (1 s → 2 s → 4 s … capped at 10 s).
- * - Thread-safe send via OkHttp's internal dispatcher.
+ * Handles:
+ * - Device registration and player slot assignment
+ * - Receiving rumble events from the PC server
+ * - Settings synchronisation
+ * - JSON-fallback input (when UDP is unavailable)
+ * - Auto-reconnect with exponential backoff
  */
 class WebSocketClient(
     private val serverUrl: String,
     private val listener: ConnectionListener
 ) {
-
     companion object {
         private const val TAG = "WebSocketClient"
         private const val CLOSE_NORMAL = 1000
@@ -32,7 +34,7 @@ class WebSocketClient(
 
     private val gson = Gson()
     private val client = OkHttpClient.Builder()
-        .readTimeout(0, TimeUnit.MILLISECONDS)   // no read timeout for persistent WS
+        .readTimeout(0, TimeUnit.MILLISECONDS)
         .pingInterval(5, TimeUnit.SECONDS)
         .build()
 
@@ -40,6 +42,9 @@ class WebSocketClient(
     @Volatile private var connected = false
     @Volatile private var shouldReconnect = true
     private var backoffMs = 1000L
+
+    /** Callback for incoming messages from the server. */
+    var onMessage: ((String) -> Unit)? = null
 
     // ── Public API ───────────────────────────────────────────────────
 
@@ -56,9 +61,16 @@ class WebSocketClient(
         connected = false
     }
 
+    /** Send a [ControllerState] as JSON (fallback path). */
     fun sendState(state: ControllerState) {
         if (!connected) return
         val json = gson.toJson(state)
+        ws?.send(json)
+    }
+
+    /** Send a raw JSON string (for registration, settings, etc.). */
+    fun sendRaw(json: String) {
+        if (!connected) return
         ws?.send(json)
     }
 
@@ -76,6 +88,11 @@ class WebSocketClient(
                 connected = true
                 backoffMs = 1000L
                 listener.onConnected()
+            }
+
+            override fun onMessage(webSocket: WebSocket, text: String) {
+                Log.d(TAG, "Received: $text")
+                onMessage?.invoke(text)
             }
 
             override fun onFailure(webSocket: WebSocket, t: Throwable, response: Response?) {

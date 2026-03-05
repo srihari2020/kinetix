@@ -1,14 +1,21 @@
 #!/usr/bin/env python3
 """
-Kinetix PC Server
-=================
-Async WebSocket server that receives controller-state JSON packets from the
-Kinetix Android app and feeds them into a virtual Xbox 360 controller via
-ViGEmBus.
+Kinetix PC Server v2.0
+======================
+Hybrid networking server for the Kinetix phone-to-PC controller system.
+
+*  **WebSocket** (port 8765) – control channel: registration, settings,
+   rumble forwarding, and JSON-fallback input.
+*  **UDP** (port 5743) – real-time binary controller input at 120 Hz.
+*  **UDP broadcast** (port 5742) – LAN auto-discovery.
+
+Supports up to 4 simultaneous controllers via ViGEmBus.
 
 Usage:
-    python server.py [--host 0.0.0.0] [--port 8765] [--no-tray]
+    python server.py [--host 0.0.0.0] [--ws-port 8765] [--udp-port 5743] [--no-tray]
 """
+
+from __future__ import annotations
 
 import argparse
 import asyncio
@@ -19,33 +26,34 @@ import socket
 import sys
 import threading
 import time
+from typing import Dict, Optional, Set
 
 import websockets
 
-from controller_mapper import ControllerMapper
-
-# ------------------------------------------------------------------ #
-#  PyInstaller helper                                                  #
-# ------------------------------------------------------------------ #
-
-def resource_path(relative: str) -> str:
-    """Return the absolute path to a bundled resource (works both in
-    dev and when frozen by PyInstaller)."""
-    base = getattr(sys, "_MEIPASS", os.path.dirname(os.path.abspath(__file__)))
-    return os.path.join(base, relative)
-
+from controller_mapper import update_from_json, parse_binary, update_from_binary
+from device_manager import DeviceManager
+from discovery import DiscoveryBroadcaster
+from logger import get_logger, setup_logging
 
 # ------------------------------------------------------------------ #
 #  Globals                                                            #
 # ------------------------------------------------------------------ #
 
-mapper: ControllerMapper | None = None
-_server_stop_event: asyncio.Event | None = None
+log = get_logger("server")
 
+device_mgr: DeviceManager | None = None
+discovery: DiscoveryBroadcaster | None = None
+
+# WebSocket → device_id mapping for cleanup
+_ws_to_device: Dict[websockets.WebSocketServerProtocol, str] = {}
+
+# Set of active WebSocket connections (for broadcasting rumble etc.)
+_ws_clients: Set[websockets.WebSocketServerProtocol] = set()
 
 # ------------------------------------------------------------------ #
 #  Network helpers                                                    #
 # ------------------------------------------------------------------ #
+
 
 def get_local_ip() -> str:
     """Return the machine's LAN IP address (best-effort)."""
@@ -59,145 +67,307 @@ def get_local_ip() -> str:
         return "127.0.0.1"
 
 
+def resource_path(relative: str) -> str:
+    """PyInstaller-compatible resource path resolver."""
+    base = getattr(sys, "_MEIPASS", os.path.dirname(os.path.abspath(__file__)))
+    return os.path.join(base, relative)
+
+
 # ------------------------------------------------------------------ #
-#  WebSocket handler                                                  #
+#  WebSocket control channel                                          #
 # ------------------------------------------------------------------ #
 
-async def handler(websocket):
-    """Handle a single controller client connection."""
-    global mapper
 
+async def ws_handler(websocket):
+    """Handle a single WebSocket client (control channel)."""
     remote = websocket.remote_address
-    print(f"\n[+] Controller connected: {remote[0]}:{remote[1]}")
-
-    # Create a fresh virtual controller for this session
-    if mapper is None:
-        mapper = ControllerMapper()
-
-    packets = 0
-    t_start = time.monotonic()
+    log.info("WebSocket connected: %s:%s", remote[0], remote[1])
+    _ws_clients.add(websocket)
 
     try:
         async for message in websocket:
             try:
                 packet = json.loads(message)
-                mapper.update(packet)
-                packets += 1
-
-                # Periodic throughput log (every ~5 s)
-                elapsed = time.monotonic() - t_start
-                if elapsed >= 5.0:
-                    hz = packets / elapsed
-                    print(f"    ↳ {hz:.0f} packets/s from {remote[0]}", end="\r")
-                    packets = 0
-                    t_start = time.monotonic()
-
+                await _process_ws_message(websocket, packet, remote)
             except json.JSONDecodeError:
-                print(f"[!] Bad JSON from {remote[0]}")
+                log.warning("Bad JSON from %s", remote[0])
             except Exception as exc:
-                print(f"[!] Error processing packet: {exc}")
-
+                log.error("Error processing WS message: %s", exc)
     except websockets.exceptions.ConnectionClosed:
         pass
     finally:
-        print(f"\n[-] Controller disconnected: {remote[0]}:{remote[1]}")
+        _ws_clients.discard(websocket)
+        # Unregister device if it was registered through this WS
+        device_id = _ws_to_device.pop(websocket, None)
+        if device_id and device_mgr:
+            device_mgr.unregister(device_id)
+        log.info("WebSocket disconnected: %s:%s", remote[0], remote[1])
+
+
+async def _process_ws_message(websocket, packet: dict, remote) -> None:
+    """Route a parsed WebSocket JSON message."""
+    msg_type = packet.get("type", "")
+
+    if msg_type == "register":
+        await _handle_register(websocket, packet, remote)
+    elif msg_type == "settings":
+        _handle_settings(packet)
+    elif msg_type == "input":
+        # JSON-fallback input (slower path for compat)
+        _handle_json_input(packet)
+    else:
+        # Legacy / bare input packet (no "type" field)
+        if "lx" in packet or "a" in packet:
+            _handle_json_input(packet)
+        else:
+            log.debug("Unknown WS message type: %s", msg_type)
+
+
+async def _handle_register(websocket, packet: dict, remote) -> None:
+    """Device registration: assign a player slot."""
+    device_id = packet.get("device_id", f"unknown-{remote[0]}")
+    device_name = packet.get("device_name", "Unknown Device")
+    ip = remote[0]
+
+    slot = device_mgr.register(device_id, device_name, ip)
+    _ws_to_device[websocket] = device_id
+
+    if slot is not None:
+        response = {
+            "type": "assigned",
+            "player": slot,  # 0-based
+            "udp_port": _udp_port,
+            "status": "ok",
+        }
+        log.info(
+            "Registered %s as Player %d (device_id=%s)",
+            device_name, slot + 1, device_id
+        )
+    else:
+        response = {
+            "type": "assigned",
+            "player": -1,
+            "status": "full",
+            "message": "All 4 controller slots are occupied.",
+        }
+        log.warning("Registration rejected – slots full: %s", device_name)
+
+    await websocket.send(json.dumps(response))
+
+
+def _handle_settings(packet: dict) -> None:
+    """Handle settings sync from a device."""
+    log.info("Settings received: %s", packet)
+
+
+def _handle_json_input(packet: dict) -> None:
+    """Process a JSON controller-state packet (WebSocket fallback path)."""
+    if device_mgr is None:
+        return
+
+    # Determine player slot from packet or use player 0
+    device_id = packet.get("device_id")
+    if device_id:
+        slot = device_mgr.slot_for_device(device_id)
+    else:
+        slot = packet.get("player", 0)
+
+    if slot is None:
+        return
+
+    gp = device_mgr.get_gamepad(slot)
+    if gp is None:
+        return
+
+    update_from_json(gp, packet)
+    device_mgr.record_packet(slot)
+
+
+# ------------------------------------------------------------------ #
+#  Rumble forwarding                                                  #
+# ------------------------------------------------------------------ #
+
+
+async def send_rumble(player_index: int, small_motor: int, large_motor: int, duration_ms: int = 200) -> None:
+    """Send a rumble event to the phone at *player_index*."""
+    msg = json.dumps({
+        "type": "rumble",
+        "player": player_index,
+        "small_motor": small_motor,
+        "large_motor": large_motor,
+        "duration_ms": duration_ms,
+    })
+    # Find the WS connection for this player's device
+    if device_mgr is None:
+        return
+    dev = device_mgr.get_device(player_index)
+    if dev is None:
+        return
+    for ws, did in _ws_to_device.items():
+        if did == dev.device_id and ws in _ws_clients:
+            try:
+                await ws.send(msg)
+            except Exception:
+                pass
+            break
+
+
+# ------------------------------------------------------------------ #
+#  UDP input server                                                   #
+# ------------------------------------------------------------------ #
+
+
+class UdpInputProtocol(asyncio.DatagramProtocol):
+    """Asyncio protocol for receiving binary controller input via UDP."""
+
+    def __init__(self) -> None:
+        self._pkt_count = 0
+        self._t_start = time.monotonic()
+
+    def datagram_received(self, data: bytes, addr: tuple) -> None:
+        if device_mgr is None:
+            return
+
+        result = parse_binary(data)
+        if result is None:
+            return
+
+        player_index, vals = result
+        gp = device_mgr.get_gamepad(player_index)
+        if gp is None:
+            return
+
+        update_from_binary(gp, vals)
+        device_mgr.record_packet(player_index)
+
+        # Periodic throughput log
+        self._pkt_count += 1
+        elapsed = time.monotonic() - self._t_start
+        if elapsed >= 5.0:
+            hz = self._pkt_count / elapsed
+            log.debug("UDP input: %.0f pkt/s", hz)
+            self._pkt_count = 0
+            self._t_start = time.monotonic()
+
+    def error_received(self, exc: Exception) -> None:
+        log.warning("UDP error: %s", exc)
 
 
 # ------------------------------------------------------------------ #
 #  Server lifecycle                                                   #
 # ------------------------------------------------------------------ #
 
-async def serve(host: str, port: int, stop_event: asyncio.Event) -> None:
-    """Run the WebSocket server until *stop_event* is set."""
-    global mapper
+_udp_port: int = 5743
 
-    async with websockets.serve(handler, host, port):
+
+async def serve(host: str, ws_port: int, udp_port: int, stop_event: asyncio.Event) -> None:
+    """Run both WebSocket and UDP servers until *stop_event* is set."""
+    global device_mgr, discovery, _udp_port
+    _udp_port = udp_port
+
+    local_ip = get_local_ip()
+
+    # Device manager
+    device_mgr = DeviceManager()
+
+    # Discovery broadcaster
+    discovery = DiscoveryBroadcaster(local_ip, ws_port, udp_port)
+    discovery.start()
+
+    # UDP input server
+    loop = asyncio.get_event_loop()
+    transport, _protocol = await loop.create_datagram_endpoint(
+        UdpInputProtocol,
+        local_addr=(host, udp_port),
+    )
+    log.info("UDP input server listening on %s:%d", host, udp_port)
+
+    # WebSocket server
+    async with websockets.serve(ws_handler, host, ws_port):
+        log.info("WebSocket server listening on %s:%d", host, ws_port)
         await stop_event.wait()
 
     # Cleanup
-    if mapper is not None:
-        mapper.close()
-        mapper = None
+    transport.close()
+    discovery.stop()
+    device_mgr.unregister_all()
+    device_mgr = None
+    log.info("Server stopped")
 
-    print("\n[*] Server stopped.")
 
-
-def _run_server_thread(host: str, port: int, stop_event: asyncio.Event) -> None:
-    """Entry point for the server background thread."""
+def _run_server_thread(host: str, ws_port: int, udp_port: int, stop_event: asyncio.Event) -> asyncio.AbstractEventLoop:
+    """Start the server on a background thread; returns the event loop."""
     loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
-    try:
-        loop.run_until_complete(serve(host, port, stop_event))
-    finally:
+
+    def thread_fn():
+        asyncio.set_event_loop(loop)
+        loop.run_until_complete(serve(host, ws_port, udp_port, stop_event))
         loop.close()
 
+    t = threading.Thread(target=thread_fn, daemon=True, name="server")
+    t.start()
+    return loop
+
 
 # ------------------------------------------------------------------ #
-#  Main (with optional tray)                                          #
+#  Entry points                                                       #
 # ------------------------------------------------------------------ #
 
-def main_with_tray(host: str, port: int) -> None:
-    """Launch the server on a background thread and run the system tray
-    icon on the main thread (required by pystray on Windows)."""
+
+def main_with_tray(host: str, ws_port: int, udp_port: int) -> None:
+    """Launch the server with a system tray icon (main thread)."""
     from tray_icon import TrayIcon
 
+    setup_logging()
     local_ip = get_local_ip()
+    _print_banner(host, ws_port, udp_port, local_ip)
+
     stop_event = asyncio.Event()
+    loop = _run_server_thread(host, ws_port, udp_port, stop_event)
 
-    # Print banner to the console / log
-    _print_banner(host, port, local_ip)
-
-    # Start server in background thread
-    loop = asyncio.new_event_loop()
-
-    def server_thread():
-        asyncio.set_event_loop(loop)
-        loop.run_until_complete(serve(host, port, stop_event))
-        loop.close()
-
-    srv_t = threading.Thread(target=server_thread, daemon=True, name="ws-server")
-    srv_t.start()
-
-    # Quit callback for tray
     def on_quit():
         loop.call_soon_threadsafe(stop_event.set)
 
-    # Run tray on main thread (blocks until Quit)
-    tray = TrayIcon(ip_address=local_ip, port=port, on_quit=on_quit)
+    def get_devices():
+        if device_mgr:
+            return device_mgr.connected_devices
+        return []
+
+    tray = TrayIcon(
+        ip_address=local_ip,
+        ws_port=ws_port,
+        udp_port=udp_port,
+        on_quit=on_quit,
+        get_devices=get_devices,
+    )
     try:
         tray.run()
     except KeyboardInterrupt:
         on_quit()
 
-    srv_t.join(timeout=3)
-    print("[*] Bye!")
+    log.info("Bye!")
 
 
-def main_headless(host: str, port: int) -> None:
-    """Run the server in console-only mode (no tray)."""
+def main_headless(host: str, ws_port: int, udp_port: int) -> None:
+    """Run in console-only mode (no tray)."""
+    setup_logging()
     local_ip = get_local_ip()
-    _print_banner(host, port, local_ip)
+    _print_banner(host, ws_port, udp_port, local_ip)
 
     stop_event = asyncio.Event()
-
-    # Graceful shutdown on Ctrl+C / SIGINT
-    def _signal_handler():
-        if not stop_event.is_set():
-            stop_event.set()
-
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
 
     try:
-        loop.add_signal_handler(signal.SIGINT, _signal_handler)
+        loop.add_signal_handler(signal.SIGINT, stop_event.set)
     except NotImplementedError:
-        pass  # Windows — falls back to KeyboardInterrupt
+        pass  # Windows fallback via KeyboardInterrupt
 
     try:
-        loop.run_until_complete(serve(host, port, stop_event))
+        loop.run_until_complete(serve(host, ws_port, udp_port, stop_event))
     except KeyboardInterrupt:
         stop_event.set()
-        loop.run_until_complete(serve(host, port, stop_event))
+        loop.run_until_complete(asyncio.sleep(0.5))
     finally:
         loop.close()
 
@@ -206,40 +376,40 @@ def main_headless(host: str, port: int) -> None:
 #  Helpers                                                            #
 # ------------------------------------------------------------------ #
 
-def _print_banner(host: str, port: int, local_ip: str) -> None:
-    print("=" * 52)
-    print("  🎮  Kinetix PC Server")
-    print("=" * 52)
-    print(f"  Listening on  ws://{host}:{port}")
-    print(f"  LAN address   ws://{local_ip}:{port}")
-    print(f"  Enter this IP in the Android app to connect.")
-    print("=" * 52)
-    print("  Press Ctrl+C or use the tray icon to stop.\n")
+
+def _print_banner(host: str, ws_port: int, udp_port: int, local_ip: str) -> None:
+    log.info("=" * 52)
+    log.info("  🎮  Kinetix PC Server v2.0")
+    log.info("=" * 52)
+    log.info("  WebSocket  ws://%s:%d", local_ip, ws_port)
+    log.info("  UDP Input  %s:%d", local_ip, udp_port)
+    log.info("  Discovery  broadcast on port 5742")
+    log.info("  Max players: 4")
+    log.info("  Enter the IP in the Android app or use auto-discovery.")
+    log.info("=" * 52)
 
 
 # ------------------------------------------------------------------ #
-#  Entry point                                                        #
+#  CLI                                                                #
 # ------------------------------------------------------------------ #
+
 
 def parse_args():
-    parser = argparse.ArgumentParser(description="Kinetix PC Server")
-    parser.add_argument("--host", default="0.0.0.0", help="Bind address (default 0.0.0.0)")
-    parser.add_argument("--port", type=int, default=8765, help="Port (default 8765)")
-    parser.add_argument(
-        "--no-tray",
-        action="store_true",
-        help="Run in console-only mode without the system tray icon",
-    )
-    return parser.parse_args()
+    p = argparse.ArgumentParser(description="Kinetix PC Server v2.0")
+    p.add_argument("--host", default="0.0.0.0", help="Bind address (default 0.0.0.0)")
+    p.add_argument("--ws-port", type=int, default=8765, help="WebSocket port (default 8765)")
+    p.add_argument("--udp-port", type=int, default=5743, help="UDP input port (default 5743)")
+    p.add_argument("--no-tray", action="store_true", help="Console-only mode")
+    return p.parse_args()
 
 
 if __name__ == "__main__":
     args = parse_args()
     try:
         if args.no_tray:
-            main_headless(args.host, args.port)
+            main_headless(args.host, args.ws_port, args.udp_port)
         else:
-            main_with_tray(args.host, args.port)
+            main_with_tray(args.host, args.ws_port, args.udp_port)
     except KeyboardInterrupt:
-        print("\n[*] Interrupted. Bye!")
+        log.info("Interrupted – goodbye!")
         sys.exit(0)

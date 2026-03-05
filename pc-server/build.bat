@@ -1,12 +1,12 @@
 @echo off
 REM ──────────────────────────────────────────────────────────────────
-REM  Kinetix PC Server – Build Script
+REM  Kinetix PC Server v2.0 – Build Script
 REM  Produces: dist\kinetix-server.exe  (single-file, no-console)
 REM ──────────────────────────────────────────────────────────────────
 
 echo.
 echo  ============================================
-echo   Kinetix PC Server – Build
+echo   Kinetix PC Server v2.0 – Build
 echo  ============================================
 echo.
 
@@ -31,6 +31,9 @@ pyinstaller ^
     --hidden-import PIL._tkinter_finder ^
     --collect-all vgamepad ^
     --add-data "controller_mapper.py;." ^
+    --add-data "device_manager.py;." ^
+    --add-data "discovery.py;." ^
+    --add-data "logger.py;." ^
     --add-data "tray_icon.py;." ^
     server.py
 
