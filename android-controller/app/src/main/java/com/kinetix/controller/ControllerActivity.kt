@@ -16,6 +16,7 @@ import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import org.json.JSONObject
 import java.util.UUID
+import com.google.gson.Gson
 
 /**
  * Full-screen landscape controller screen with hybrid networking.
