@@ -20,7 +20,7 @@ class PluginManager:
         """Discovers and loads all plugins from the plugins directory."""
         if getattr(sys, 'frozen', False):
             # Running as compiled PyInstaller executable
-            base_path = os.path.dirname(sys.executable)
+            base_path = sys._MEIPASS
         else:
             base_path = os.getcwd()
             

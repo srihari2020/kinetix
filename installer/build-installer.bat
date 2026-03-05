@@ -20,5 +20,5 @@ if errorlevel 1 (
 )
 
 echo.
-echo Build successful! Output in installer\output\KinetixSetup.exe
+echo Build successful! Output in ..\dist\KinetixSetup.exe
 echo.

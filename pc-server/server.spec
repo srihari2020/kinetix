@@ -39,7 +39,9 @@ a = Analysis(
     hiddenimports=[
         "pystray._win32",
         "PIL._tkinter_finder",
-        "psutil"
+        "psutil",
+        "websockets",
+        "pydantic"
     ] + vgamepad_hiddenimports + aiortc_hiddenimports + fastapi_hiddenimports + uvicorn_hiddenimports,
     hookspath=[],
     hooksconfig={},

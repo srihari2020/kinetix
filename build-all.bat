@@ -50,7 +50,7 @@ echo.
 echo =================================================================
 echo.
 echo    SUCCESS! Kinetix Installer created at:
-echo    installer\output\KinetixSetup.exe
+echo    dist\KinetixSetup.exe
 echo.
 echo =================================================================
 pause

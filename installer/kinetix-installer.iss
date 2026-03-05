@@ -15,7 +15,7 @@ AppPublisherURL=https://github.com/kinetix-controller
 DefaultDirName={autopf}\Kinetix Control Center
 DefaultGroupName=Kinetix
 UninstallDisplayIcon={app}\Kinetix Control Center.exe
-OutputDir=output
+OutputDir=..\dist
 OutputBaseFilename=KinetixSetup
 Compression=lzma2
 SolidCompression=yes
@@ -32,6 +32,10 @@ Source: "..\control-center\release\win-unpacked\*"; DestDir: "{app}"; Flags: ign
 
 ; ViGEmBus installer
 Source: "prereqs\ViGEmBus_Setup_x64.msi"; DestDir: "{tmp}"; Flags: ignoreversion deleteafterinstall; Check: ViGEmMsiExists
+
+[Dirs]
+Name: "{app}\config"
+Name: "{app}\logs"
 
 [Icons]
 ; Desktop shortcut

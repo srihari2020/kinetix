@@ -18,6 +18,8 @@
     "directories": {
       "output": "release"
     },
+    "asar": true,
+    "compression": "maximum",
     "win": {
       "target": "dir",
       "icon": "public/favicon.ico"
