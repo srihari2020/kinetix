@@ -11,7 +11,7 @@ echo  ============================================
 echo.
 
 echo [1/1] Running Inno Setup Compiler …
-iscc kinetix-installer.iss
+"C:\Program Files (x86)\Inno Setup 6\ISCC.exe" kinetix-installer.iss
 
 if errorlevel 1 (
     echo ERROR: Inno Setup build failed.

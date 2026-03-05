@@ -11,7 +11,7 @@ echo  ============================================
 echo.
 
 echo [1/2] Installing dependencies …
-pip install -r requirements.txt pyinstaller
+python -m pip install -r requirements.txt pyinstaller
 if errorlevel 1 (
     echo ERROR: pip install failed.
     exit /b 1
@@ -19,7 +19,7 @@ if errorlevel 1 (
 
 echo.
 echo [2/2] Running PyInstaller …
-pyinstaller --clean --noconfirm server.spec
+python -m PyInstaller --clean --noconfirm server.spec
 
 if errorlevel 1 (
     echo ERROR: PyInstaller build failed.
