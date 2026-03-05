@@ -8,18 +8,16 @@ let pythonProcess = null;
 const isDev = !app.isPackaged;
 
 function startPythonServer() {
-    const pythonPath = 'python'; // or 'python3' based on the system
-
-    // In dev, the server is at ../pc-server/server.py relative to the electron app
-    // In prod, you'd typically bundle it with PyInstaller or copy the folder
-    const serverScript = isDev
-        ? path.join(__dirname, '../../pc-server/server.py')
-        : path.join(process.resourcesPath, 'pc-server/server.py'); // Assuming it's copied to resources
-
-    console.log('Starting Python server at:', serverScript);
-
-    // Pass --no-tray flag to avoid double system tray icons if any
-    pythonProcess = spawn(pythonPath, [serverScript, '--no-tray']);
+    if (isDev) {
+        const pythonPath = 'python'; // or 'python3' based on the system
+        const serverScript = path.join(__dirname, '../../pc-server/server.py');
+        console.log('Starting Python server at:', serverScript);
+        pythonProcess = spawn(pythonPath, [serverScript, '--no-tray']);
+    } else {
+        const serverExe = path.join(process.resourcesPath, 'server.exe');
+        console.log('Starting standalone Python server at:', serverExe);
+        pythonProcess = spawn(serverExe, ['--no-tray']);
+    }
 
     pythonProcess.stdout.on('data', (data) => {
         console.log(`Python: ${data.toString()}`);

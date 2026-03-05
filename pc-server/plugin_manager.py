@@ -18,14 +18,22 @@ class PluginManager:
         
     def load_plugins(self):
         """Discovers and loads all plugins from the plugins directory."""
-        if not os.path.exists(self.plugins_dir):
-            os.makedirs(self.plugins_dir, exist_ok=True)
-            log.info(f"Created plugins directory: {self.plugins_dir}")
+        if getattr(sys, 'frozen', False):
+            # Running as compiled PyInstaller executable
+            base_path = os.path.dirname(sys.executable)
+        else:
+            base_path = os.getcwd()
+            
+        full_plugins_dir = os.path.join(base_path, self.plugins_dir)
+
+        if not os.path.exists(full_plugins_dir):
+            os.makedirs(full_plugins_dir, exist_ok=True)
+            log.info(f"Created plugins directory: {full_plugins_dir}")
             return
             
-        sys.path.insert(0, os.path.abspath(self.plugins_dir))
+        sys.path.insert(0, os.path.abspath(full_plugins_dir))
         
-        for filename in os.listdir(self.plugins_dir):
+        for filename in os.listdir(full_plugins_dir):
             if filename.endswith(".py") and not filename.startswith("__"):
                 module_name = filename[:-3]
                 try:

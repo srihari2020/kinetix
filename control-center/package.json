@@ -19,12 +19,17 @@
       "output": "release"
     },
     "win": {
-      "target": "nsis"
+      "target": "dir",
+      "icon": "public/favicon.ico"
     },
     "extraResources": [
       {
-        "from": "../pc-server",
-        "to": "pc-server",
+        "from": "../pc-server/dist/server.exe",
+        "to": "server.exe"
+      },
+      {
+        "from": "../pc-server/plugins",
+        "to": "plugins",
         "filter": [
           "**/*"
         ]

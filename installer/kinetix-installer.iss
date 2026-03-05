@@ -1,22 +1,22 @@
 ; ──────────────────────────────────────────────────────────────────────
-;  Kinetix PC Server v2.0 – Inno Setup Installer Script
+;  Kinetix Control Center v3.0 – Inno Setup Installer Script
 ;
 ;  Prerequisites:
-;   1. Build kinetix-server.exe first (run build.bat)
-;   2. Place ViGEmBus_Setup_x64.msi in this folder
-;   3. Compile with Inno Setup 6+  (https://jrsoftware.org/isinfo.php)
+;   1. Run build-all.bat (builds Server & Electron app)
+;   2. Place ViGEmBus_Setup_x64.msi in installer/prereqs/
+;   3. Compile with Inno Setup 6+
 ; ──────────────────────────────────────────────────────────────────────
 
 [Setup]
-AppName=Kinetix Server
-AppVersion=2.0.0
+AppName=Kinetix Control Center
+AppVersion=3.0.0
 AppPublisher=Kinetix Contributors
 AppPublisherURL=https://github.com/kinetix-controller
-DefaultDirName={autopf}\Kinetix Server
-DefaultGroupName=Kinetix Server
-UninstallDisplayIcon={app}\kinetix-server.exe
+DefaultDirName={autopf}\Kinetix Control Center
+DefaultGroupName=Kinetix
+UninstallDisplayIcon={app}\Kinetix Control Center.exe
 OutputDir=output
-OutputBaseFilename=KinetixServerSetup-v2
+OutputBaseFilename=KinetixSetup
 Compression=lzma2
 SolidCompression=yes
 ArchitecturesInstallIn64BitMode=x64compatible
@@ -27,36 +27,36 @@ PrivilegesRequired=admin
 Name: "english"; MessagesFile: "compiler:Default.isl"
 
 [Files]
-; Main executable (relative to this .iss file → ../pc-server/dist/)
-Source: "..\pc-server\dist\kinetix-server.exe"; DestDir: "{app}"; Flags: ignoreversion
+; The unpacked Electron application
+Source: "..\control-center\release\win-unpacked\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 
-; ViGEmBus driver installer (user must place this MSI in the installer/ folder)
-Source: "ViGEmBus_Setup_x64.msi"; DestDir: "{tmp}"; Flags: ignoreversion deleteafterinstall; Check: ViGEmMsiExists
+; ViGEmBus installer
+Source: "prereqs\ViGEmBus_Setup_x64.msi"; DestDir: "{tmp}"; Flags: ignoreversion deleteafterinstall; Check: ViGEmMsiExists
 
 [Icons]
 ; Desktop shortcut
-Name: "{autodesktop}\Kinetix Server"; Filename: "{app}\kinetix-server.exe"; Comment: "Launch Kinetix wireless controller server"
+Name: "{autodesktop}\Kinetix Control Center"; Filename: "{app}\Kinetix Control Center.exe"; Comment: "Launch Kinetix Controller Server & Dashboard"
 
 ; Start Menu
-Name: "{group}\Kinetix Server"; Filename: "{app}\kinetix-server.exe"
-Name: "{group}\Uninstall Kinetix Server"; Filename: "{uninstallexe}"
+Name: "{group}\Kinetix Control Center"; Filename: "{app}\Kinetix Control Center.exe"
+Name: "{group}\Uninstall Kinetix"; Filename: "{uninstallexe}"
 
 [Run]
 ; Install ViGEmBus silently if the MSI is present
 Filename: "msiexec.exe"; Parameters: "/i ""{tmp}\ViGEmBus_Setup_x64.msi"" /quiet /norestart"; StatusMsg: "Installing ViGEmBus driver…"; Flags: runhidden waituntilterminated; Check: ViGEmMsiExists
 
 ; Optionally launch after install
-Filename: "{app}\kinetix-server.exe"; Description: "Launch Kinetix Server now"; Flags: postinstall nowait skipifsilent
+Filename: "{app}\Kinetix Control Center.exe"; Description: "Launch Kinetix Control Center now"; Flags: postinstall nowait skipifsilent
 
 [Registry]
-; Start with Windows (optional — checked by default in the wizard)
-Root: HKCU; Subkey: "Software\Microsoft\Windows\CurrentVersion\Run"; ValueType: string; ValueName: "KinetixServer"; ValueData: """{app}\kinetix-server.exe"""; Flags: uninsdeletevalue; Tasks: startup
+; Start with Windows (optional)
+Root: HKCU; Subkey: "Software\Microsoft\Windows\CurrentVersion\Run"; ValueType: string; ValueName: "KinetixControlCenter"; ValueData: """{app}\Kinetix Control Center.exe"""; Flags: uninsdeletevalue; Tasks: startup
 
 [Tasks]
-Name: "startup"; Description: "Start Kinetix Server with Windows"; GroupDescription: "Additional options:"; Flags: checkedonce
+Name: "startup"; Description: "Start Kinetix Control Center with Windows"; GroupDescription: "Additional options:"; Flags: checkedonce
 
 [Code]
 function ViGEmMsiExists(): Boolean;
 begin
-  Result := FileExists(ExpandConstant('{src}\ViGEmBus_Setup_x64.msi'));
+  Result := FileExists(ExpandConstant('{src}\prereqs\ViGEmBus_Setup_x64.msi'));
 end;
