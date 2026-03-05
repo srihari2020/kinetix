@@ -47,4 +47,7 @@ dependencies {
 
     // JSON
     implementation("com.google.code.gson:gson:2.10.1")
+
+    // WebRTC
+    implementation("io.getstream:stream-webrtc-android:1.1.1")
 }

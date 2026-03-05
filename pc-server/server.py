@@ -34,6 +34,8 @@ from controller_mapper import update_from_json, parse_binary, update_from_binary
 from device_manager import DeviceManager
 from discovery import DiscoveryBroadcaster
 from logger import get_logger, setup_logging
+from plugin_manager import plugin_mgr
+import webrtc_server
 
 # ------------------------------------------------------------------ #
 #  Globals                                                            #
@@ -43,6 +45,7 @@ log = get_logger("server")
 
 device_mgr: DeviceManager | None = None
 discovery: DiscoveryBroadcaster | None = None
+webrtc_mgr: webrtc_server.WebRTCManager | None = None
 
 # WebSocket → device_id mapping for cleanup
 _ws_to_device: Dict[websockets.WebSocketServerProtocol, str] = {}
@@ -115,6 +118,10 @@ async def _process_ws_message(websocket, packet: dict, remote) -> None:
     elif msg_type == "input":
         # JSON-fallback input (slower path for compat)
         _handle_json_input(packet)
+    elif msg_type == "webrtc_offer":
+        if webrtc_mgr:
+            player_index = packet.get("player", 0)
+            await webrtc_mgr.handle_offer(websocket, packet, player_index)
     else:
         # Legacy / bare input packet (no "type" field)
         if "lx" in packet or "a" in packet:
@@ -133,6 +140,7 @@ async def _handle_register(websocket, packet: dict, remote) -> None:
     _ws_to_device[websocket] = device_id
 
     if slot is not None:
+        plugin_mgr.notify_network_connect(device_id, ip)
         response = {
             "type": "assigned",
             "player": slot,  # 0-based
@@ -175,12 +183,52 @@ def _handle_json_input(packet: dict) -> None:
     if slot is None:
         return
 
+    # Process through plugins
+    packet = plugin_mgr.process_input(slot, packet)
+
     gp = device_mgr.get_gamepad(slot)
     if gp is None:
         return
 
     update_from_json(gp, packet)
     device_mgr.record_packet(slot)
+    
+    try:
+        import api_server
+        api_server.push_live_update({"type": "input", "player": slot, "data": packet})
+    except Exception:
+        pass
+
+
+def _on_webrtc_input(player_index: int, data: any, is_binary: bool) -> None:
+    if device_mgr is None:
+        return
+        
+    if is_binary:
+        result = parse_binary(data)
+        if result is None:
+            return
+        p_idx, vals = result
+        seq = vals.get("seq", -1)
+        vals = plugin_mgr.process_input(p_idx, vals)
+        gp = device_mgr.get_gamepad(p_idx)
+        if gp is None:
+            return
+        update_from_binary(gp, vals)
+        device_mgr.record_packet(p_idx, seq)
+    else:
+        data = plugin_mgr.process_input(player_index, data)
+        gp = device_mgr.get_gamepad(player_index)
+        if gp is None:
+            return
+        update_from_json(gp, data)
+        device_mgr.record_packet(player_index)
+        
+    try:
+        import api_server
+        api_server.push_live_update({"type": "input", "player": player_index, "data": vals if is_binary else data})
+    except Exception:
+        pass
 
 
 # ------------------------------------------------------------------ #
@@ -233,12 +281,23 @@ class UdpInputProtocol(asyncio.DatagramProtocol):
             return
 
         player_index, vals = result
+        seq = vals.get("seq", -1)
+        
+        # Process through plugins
+        vals = plugin_mgr.process_input(player_index, vals)
+
         gp = device_mgr.get_gamepad(player_index)
         if gp is None:
             return
 
         update_from_binary(gp, vals)
-        device_mgr.record_packet(player_index)
+        device_mgr.record_packet(player_index, seq)
+
+        try:
+            import api_server
+            api_server.push_live_update({"type": "input", "player": player_index, "data": vals})
+        except Exception:
+            pass
 
         # Periodic throughput log
         self._pkt_count += 1
@@ -246,6 +305,11 @@ class UdpInputProtocol(asyncio.DatagramProtocol):
         if elapsed >= 5.0:
             hz = self._pkt_count / elapsed
             log.debug("UDP input: %.0f pkt/s", hz)
+            try:
+                import api_server
+                api_server.update_network_stats({"packet_rate_in": hz})
+            except Exception:
+                pass
             self._pkt_count = 0
             self._t_start = time.monotonic()
 
@@ -258,17 +322,83 @@ class UdpInputProtocol(asyncio.DatagramProtocol):
 # ------------------------------------------------------------------ #
 
 _udp_port: int = 5743
+_ws_port: int = 8765
+
+game_detector = None
+telemetry_task = None
+
+async def _telemetry_loop():
+    """Periodically aggregates telemetry and sends to API server."""
+    try:
+        import api_server
+    except Exception:
+        return
+        
+    while True:
+        await asyncio.sleep(0.5)
+        if not device_mgr:
+            continue
+            
+        devices = device_mgr.connected_devices
+        if not devices:
+            continue
+            
+        # Aggregate overall stats (avg jitter, sum rate, avg loss)
+        total_rate = sum(d.packets_per_sec() for d in devices)
+        avg_jitter = sum(d.jitter_ms for d in devices) / len(devices)
+        avg_loss = sum(d.packet_loss_pct for d in devices) / len(devices)
+        
+        # We don't have true RTT without pinging, so we use jitter/2 as rough latency metric for UDP
+        # Real WebRTC implementations would get this from getStats()
+        avg_latency = avg_jitter / 2.0 + 2.0 # minimum baseline 2ms
+        
+        stats = {
+            "latency_ms": avg_latency,
+            "packet_rate_in": total_rate,
+            "packet_loss_pct": avg_loss,
+            "jitter_ms": avg_jitter
+        }
+        api_server.update_network_stats(stats)
+        api_server.push_live_update({"type": "telemetry", "data": stats})
 
 
 async def serve(host: str, ws_port: int, udp_port: int, stop_event: asyncio.Event) -> None:
     """Run both WebSocket and UDP servers until *stop_event* is set."""
-    global device_mgr, discovery, _udp_port
+    global device_mgr, discovery, _udp_port, _ws_port, game_detector
     _udp_port = udp_port
+    _ws_port = ws_port
 
     local_ip = get_local_ip()
 
-    # Device manager
+    # Device manager and plugins
     device_mgr = DeviceManager()
+    plugin_mgr.load_plugins()
+
+    global webrtc_mgr
+    webrtc_mgr = webrtc_server.WebRTCManager(_on_webrtc_input)
+
+    from game_detector import GameDetector
+    def on_profile_switch(profile_data):
+        msg = json.dumps({"type": "profile", "data": profile_data})
+        for ws in list(_ws_clients):
+            try:
+                loop.call_soon_threadsafe(asyncio.create_task, ws.send(msg))
+            except Exception:
+                pass
+
+    game_detector = GameDetector(on_profile_switch)
+    game_detector.start()
+
+    # Start API server for Control Center dashboard
+    try:
+        import api_server
+        api_server.start_api_server_thread(port=8080)
+        global telemetry_task
+        telemetry_task = asyncio.create_task(_telemetry_loop())
+    except ImportError:
+        log.warning("FastAPI not installed; Control Center API disabled.")
+    except Exception as exc:
+        log.warning("Could not start API server: %s", exc)
 
     # Discovery broadcaster
     discovery = DiscoveryBroadcaster(local_ip, ws_port, udp_port)
@@ -288,10 +418,15 @@ async def serve(host: str, ws_port: int, udp_port: int, stop_event: asyncio.Even
         await stop_event.wait()
 
     # Cleanup
+    if webrtc_mgr:
+        await webrtc_mgr.cleanup()
+    if game_detector:
+        game_detector.stop()
     transport.close()
     discovery.stop()
     device_mgr.unregister_all()
     device_mgr = None
+    plugin_mgr.unload_plugins()
     log.info("Server stopped")
 
 

@@ -63,6 +63,12 @@ class SettingsActivity : AppCompatActivity() {
 
         saveBtn.setOnClickListener { saveCurrentProfile() }
 
+        val editLayoutBtn = findViewById<Button>(R.id.edit_layout_btn)
+        editLayoutBtn?.setOnClickListener {
+            val intent = android.content.Intent(this, LayoutEditorActivity::class.java)
+            startActivity(intent)
+        }
+
         // Back button in toolbar
         findViewById<View>(R.id.back_btn)?.setOnClickListener { finish() }
     }

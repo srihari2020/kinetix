@@ -25,6 +25,20 @@ class ControllerView @JvmOverloads constructor(
     // ── Callback ─────────────────────────────────────────────────────
     var onStateChanged: ((ButtonState) -> Unit)? = null
 
+    var layoutOverrides = mutableMapOf<String, FloatArray>()
+        set(value) {
+            field = value.toMutableMap()
+            if (width > 0 && height > 0) {
+                buttons.clear()
+                dpadButtons.clear()
+                layoutButtons(width.toFloat(), height.toFloat())
+                invalidate()
+            }
+        }
+    var isEditMode = false
+    var onLayoutChanged: ((Map<String, FloatArray>) -> Unit)? = null
+    private var draggedButton: String? = null
+
     data class ButtonState(
         val a: Boolean = false,
         val b: Boolean = false,
@@ -169,6 +183,27 @@ class ControllerView @JvmOverloads constructor(
         dpadButtons += GameButton("dpad_right", "▶",
             RectF(dpCx + dpGap, dpCy - dpSize, dpCx + dpSize * 2 + dpGap, dpCy + dpSize),
             color = colDpad, pressedColor = colDpadDark)
+
+        // Apply overrides
+        for (btn in buttons + dpadButtons) {
+            layoutOverrides[btn.id]?.let { override ->
+                val newCx = w * override[0]
+                val newCy = h * override[1]
+                val dx = newCx - btn.rect.centerX()
+                val dy = newCy - btn.rect.centerY()
+                btn.rect.offset(dx, dy)
+            }
+        }
+        layoutOverrides["lt_zone"]?.let { override ->
+            val newCx = w * override[0]
+            val newCy = h * override[1]
+            ltRect.offset(newCx - ltRect.centerX(), newCy - ltRect.centerY())
+        }
+        layoutOverrides["rt_zone"]?.let { override ->
+            val newCx = w * override[0]
+            val newCy = h * override[1]
+            rtRect.offset(newCx - rtRect.centerX(), newCy - rtRect.centerY())
+        }
     }
 
     private fun circleRect(cx: Float, cy: Float, r: Float) =
@@ -253,6 +288,8 @@ class ControllerView @JvmOverloads constructor(
     // ── Touch handling ───────────────────────────────────────────────
 
     override fun onTouchEvent(event: MotionEvent): Boolean {
+        if (isEditMode) return handleEditTouch(event)
+
         when (event.actionMasked) {
             MotionEvent.ACTION_DOWN, MotionEvent.ACTION_POINTER_DOWN -> {
                 val idx = event.actionIndex
@@ -308,6 +345,58 @@ class ControllerView @JvmOverloads constructor(
             }
         }
         return super.onTouchEvent(event)
+    }
+
+    private fun handleEditTouch(event: MotionEvent): Boolean {
+        when (event.actionMasked) {
+            MotionEvent.ACTION_DOWN -> {
+                val hits = hitTest(event.x, event.y)
+                draggedButton = hits.firstOrNull()
+                return draggedButton != null
+            }
+            MotionEvent.ACTION_MOVE -> {
+                draggedButton?.let { id ->
+                    val btn = (buttons + dpadButtons).find { it.id == id }
+                    if (btn != null) {
+                        val dx = event.x - btn.rect.centerX()
+                        val dy = event.y - btn.rect.centerY()
+                        btn.rect.offset(dx, dy)
+                    } else if (id == "lt_zone") {
+                        val dx = event.x - ltRect.centerX()
+                        val dy = event.y - ltRect.centerY()
+                        ltRect.offset(dx, dy)
+                    } else if (id == "rt_zone") {
+                        val dx = event.x - rtRect.centerX()
+                        val dy = event.y - rtRect.centerY()
+                        rtRect.offset(dx, dy)
+                    }
+                    invalidate()
+                }
+            }
+            MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
+                draggedButton?.let { id ->
+                    val cx: Float
+                    val cy: Float
+                    val btn = (buttons + dpadButtons).find { it.id == id }
+                    if (btn != null) {
+                        cx = btn.rect.centerX()
+                        cy = btn.rect.centerY()
+                    } else if (id == "lt_zone") {
+                        cx = ltRect.centerX()
+                        cy = ltRect.centerY()
+                    } else if (id == "rt_zone") {
+                        cx = rtRect.centerX()
+                        cy = rtRect.centerY()
+                    } else {
+                        return true
+                    }
+                    layoutOverrides[id] = floatArrayOf(cx / width, cy / height)
+                    onLayoutChanged?.invoke(layoutOverrides)
+                    draggedButton = null
+                }
+            }
+        }
+        return true
     }
 
     private fun hitTest(x: Float, y: Float): List<String> {

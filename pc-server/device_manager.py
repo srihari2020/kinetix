@@ -36,10 +36,18 @@ class DeviceInfo:
     connected_at: float = field(default_factory=time.time)
     last_packet_at: float = field(default_factory=time.time)
     packet_count: int = 0
+    recent_packets: int = 0
+    last_rate_calc: float = field(default_factory=time.time)
+    current_rate_hz: float = 0.0
+    
+    # Telemetry
+    last_seq: int = -1
+    packets_lost: int = 0
+    jitter_ms: float = 0.0
+    packet_loss_pct: float = 0.0
 
     def packets_per_sec(self) -> float:
-        elapsed = time.time() - self.connected_at
-        return self.packet_count / elapsed if elapsed > 0 else 0.0
+        return self.current_rate_hz
 
 
 # ------------------------------------------------------------------ #
@@ -140,12 +148,49 @@ class DeviceManager:
 
     # ── Input ─────────────────────────────────────────────────────────
 
-    def record_packet(self, player_index: int) -> None:
-        """Bump the packet counter for a player (call after update)."""
+    def record_packet(self, player_index: int, seq: int = -1) -> None:
+        """Bump the packet counter for a player and track telemetry."""
         dev = self._devices[player_index] if 0 <= player_index < MAX_PLAYERS else None
         if dev is not None:
+            now = time.time()
+            
+            # Packet loss
+            if seq != -1:
+                if dev.last_seq != -1:
+                    expected_seq = (dev.last_seq + 1) % 256
+                    if seq != expected_seq:
+                        # calculate gap
+                        gap = (seq - expected_seq) % 256
+                        if gap < 100: # ignore large out-of-order jumps
+                            dev.packets_lost += gap
+                dev.last_seq = seq
+
+            # Jitter (variation in delay)
+            if dev.packet_count > 0:
+                dt = (now - dev.last_packet_at) * 1000.0 # ms
+                # expected dt is roughly 1000 / dev.current_rate_hz
+                expected_dt = 1000.0 / dev.current_rate_hz if dev.current_rate_hz > 0 else 8.0
+                deviation = abs(dt - expected_dt)
+                dev.jitter_ms = dev.jitter_ms + (deviation - dev.jitter_ms) / 16.0
+
             dev.packet_count += 1
-            dev.last_packet_at = time.time()
+            dev.recent_packets += 1
+            dev.last_packet_at = now
+            
+            elapsed = now - dev.last_rate_calc
+            if elapsed >= 1.0:
+                dev.current_rate_hz = dev.recent_packets / elapsed
+                # Calculate packet loss %
+                if dev.recent_packets > 0:
+                    total_expected = dev.recent_packets + dev.packets_lost
+                    dev.packet_loss_pct = (dev.packets_lost / total_expected) * 100.0
+                else:
+                    dev.packet_loss_pct = 0.0
+                
+                # Reset for next window
+                dev.recent_packets = 0
+                dev.packets_lost = 0
+                dev.last_rate_calc = now
 
     # ── Private ───────────────────────────────────────────────────────
 

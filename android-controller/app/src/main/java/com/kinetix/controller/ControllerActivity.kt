@@ -28,6 +28,7 @@ class ControllerActivity : AppCompatActivity(), WebSocketClient.ConnectionListen
     // ── Networking ───────────────────────────────────────────────────
     private lateinit var wsClient: WebSocketClient
     private var udpSender: UdpInputSender? = null
+    private var webRtcClient: WebRtcClient? = null
     private var playerIndex: Int = 0
 
     // ── UI ───────────────────────────────────────────────────────────
@@ -136,6 +137,11 @@ class ControllerActivity : AppCompatActivity(), WebSocketClient.ConnectionListen
         val wsUrl = "ws://$serverIp:$wsPort"
         wsClient = WebSocketClient(wsUrl, this)
         wsClient.onMessage = { msg -> handleServerMessage(msg) }
+        
+        webRtcClient = WebRtcClient(this) { sdpJson ->
+            wsClient.sendRaw(sdpJson)
+        }
+        
         wsClient.connect()
     }
 
@@ -156,6 +162,7 @@ class ControllerActivity : AppCompatActivity(), WebSocketClient.ConnectionListen
         super.onDestroy()
         handler.removeCallbacks(sendRunnable)
         udpSender?.stop()
+        webRtcClient?.close()
         wsClient.disconnect()
     }
 
@@ -182,7 +189,14 @@ class ControllerActivity : AppCompatActivity(), WebSocketClient.ConnectionListen
         )
 
         // Primary: UDP (fast path)
-        udpSender?.let { it.currentState = state }
+        udpSender?.let { 
+            it.currentState = state 
+            if (webRtcClient?.isConnected == true) {
+                // Send same binary block over WebRTC
+                val packet = it.packState(state)
+                webRtcClient?.send(packet)
+            }
+        }
 
         // Fallback: WebSocket JSON (if UDP not yet started)
         if (udpSender == null && wsClient.isConnected) {
@@ -207,6 +221,9 @@ class ControllerActivity : AppCompatActivity(), WebSocketClient.ConnectionListen
                             playerIndicator.visibility = View.VISIBLE
                             // Start UDP sender
                             startUdpSender(assignedUdpPort)
+                            
+                            // Start WebRTC connection
+                            webRtcClient?.startCall(playerIndex)
                         } else {
                             Toast.makeText(this, json.optString("message", "Slot full"), Toast.LENGTH_LONG).show()
                         }
@@ -219,6 +236,25 @@ class ControllerActivity : AppCompatActivity(), WebSocketClient.ConnectionListen
                     if (profile.vibrationEnabled) {
                         triggerVibration(small, large, durationMs)
                     }
+                }
+                "profile" -> {
+                    val profileJson = json.optJSONObject("data")?.toString()
+                    if (profileJson != null) {
+                        runOnUiThread {
+                            profile = Gson().fromJson(profileJson, ControllerProfile::class.java)
+                            // Apply new profile settings instantly
+                            sendIntervalMs = (1000L / profile.sendRateHz).coerceAtLeast(8L)
+                            gyroEnabled = profile.gyroEnabled
+                            gyroManager.sensitivity = profile.gyroSensitivity
+                            updateGyroButton()
+                            if (gyroEnabled) gyroManager.start() else gyroManager.stop()
+                            Toast.makeText(this@ControllerActivity, "Profile applied: ${profile.name}", Toast.LENGTH_SHORT).show()
+                        }
+                    }
+                }
+                "webrtc_answer" -> {
+                    val sdp = json.optString("sdp")
+                    webRtcClient?.setRemoteDescription(sdp)
                 }
             }
         } catch (_: Exception) {}

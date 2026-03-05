@@ -43,6 +43,13 @@
             android:screenOrientation="portrait"
             android:theme="@style/Theme.Kinetix" />
 
+        <activity
+            android:name=".LayoutEditorActivity"
+            android:exported="false"
+            android:screenOrientation="landscape"
+            android:configChanges="orientation|screenSize|keyboardHidden"
+            android:theme="@style/Theme.Kinetix.Fullscreen" />
+
     </application>
 
 </manifest>

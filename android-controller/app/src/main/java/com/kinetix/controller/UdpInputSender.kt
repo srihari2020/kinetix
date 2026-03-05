@@ -96,7 +96,7 @@ class UdpInputSender(
         }
     }
 
-    private fun packState(state: ControllerState): ByteArray {
+    fun packState(state: ControllerState): ByteArray {
         val buf = ByteBuffer.allocate(PACKET_SIZE).order(ByteOrder.LITTLE_ENDIAN)
 
         buf.put(playerId.toByte())                           // player_id

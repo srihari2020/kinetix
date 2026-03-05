@@ -20,6 +20,16 @@ Kinetix is a professional phone-to-PC controller system that transforms any Andr
 | **Battery Indicator** | See phone battery while playing |
 | **Start With Windows** | Optional autostart on boot |
 
+## ✨ What's New in v3.0
+
+- **Plugin System:** Drop Python scripts into `plugins/` to intercept and manipulate input (e.g., Gyro Mouse, Macro engines).
+- **WebRTC Networking:** Ultra-low latency DataChannels alongside standard UDP fallback.
+- **Controller Profiles:** Save custom button layouts and gyro sensitivities, and auto-load them based on the active Windows game.
+- **Visual Layout Editor:** Drag and drop buttons on your Android phone to build your perfect controller.
+- **Network Telemetry:** Real-time dashboards showing jitter, packets per second, and loss percentage in the React Control Center.
+
+See the full architectural breakdown of v3 in [docs/v3_architecture.md](docs/v3_architecture.md).
+
 ## 📦 Components
 
 ```

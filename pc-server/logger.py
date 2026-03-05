@@ -8,6 +8,7 @@ Logs to both console (coloured) and ``logs/server.log`` with rotation
 import logging
 import os
 import sys
+from collections import deque
 from logging.handlers import RotatingFileHandler
 
 _LOG_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "logs")
@@ -16,6 +17,22 @@ _MAX_BYTES = 5 * 1024 * 1024  # 5 MB
 _BACKUP_COUNT = 3
 _FMT = "%(asctime)s  %(levelname)-8s  %(name)-18s  %(message)s"
 _DATE_FMT = "%Y-%m-%d %H:%M:%S"
+
+class MemoryLogHandler(logging.Handler):
+    """Keeps the last N log lines in memory."""
+    def __init__(self, capacity: int = 100):
+        super().__init__()
+        self.capacity = capacity
+        self.logs = deque(maxlen=capacity)
+
+    def emit(self, record: logging.LogRecord) -> None:
+        try:
+            msg = self.format(record)
+            self.logs.append(msg)
+        except Exception:
+            self.handleError(record)
+
+mem_handler = MemoryLogHandler(capacity=200)
 
 _initialised = False
 
@@ -43,10 +60,15 @@ def setup_logging(level: int = logging.DEBUG) -> None:
     ch.setLevel(level)
     ch.setFormatter(formatter)
 
+    # Memory handler
+    mem_handler.setLevel(logging.DEBUG)
+    mem_handler.setFormatter(formatter)
+
     root = logging.getLogger()
     root.setLevel(logging.DEBUG)
     root.addHandler(fh)
     root.addHandler(ch)
+    root.addHandler(mem_handler)
 
 
 def get_logger(name: str) -> logging.Logger:

@@ -140,7 +140,7 @@ def parse_binary(data: bytes) -> Optional[tuple[int, dict]]:
         return None
 
     return player_id, {
-        "lx": lx, "ly": ly, "rx": rx, "ry": ry,
+        "seq": seq, "lx": lx, "ly": ly, "rx": rx, "ry": ry,
         "lt": lt, "rt": rt,
         "buttons": buttons, "dpad": dpad,
     }

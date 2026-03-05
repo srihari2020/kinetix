@@ -212,6 +212,20 @@
                 android:popupBackground="#1A1A2E" />
         </LinearLayout>
 
+        <!-- Customisation -->
+        <Button
+            android:id="@+id/edit_layout_btn"
+            android:layout_width="match_parent"
+            android:layout_height="52dp"
+            android:backgroundTint="#3A3A5E"
+            android:fontFamily="sans-serif-medium"
+            android:text="EDIT LAYOUT"
+            android:textColor="#FFFFFF"
+            android:textSize="15sp"
+            android:letterSpacing="0.1"
+            android:layout_marginTop="24dp"
+            android:layout_marginBottom="16dp" />
+
         <!-- Save button -->
         <Button
             android:id="@+id/save_btn"
