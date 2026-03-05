@@ -67,6 +67,7 @@ class WebSocketClient(
     // ── Internal ─────────────────────────────────────────────────────
 
     private fun openSocket() {
+        Log.i(TAG, "Attempting connection to $serverUrl")
         val request = Request.Builder().url(serverUrl).build()
         ws = client.newWebSocket(request, object : WebSocketListener() {
 

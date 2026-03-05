@@ -109,7 +109,8 @@ class ControllerActivity : AppCompatActivity(), WebSocketClient.ConnectionListen
         runOnUiThread {
             connectionIndicator.text = "● Connected"
             connectionIndicator.setTextColor(0xFF2ECC71.toInt())
-            Toast.makeText(this, "Connected to server!", Toast.LENGTH_SHORT).show()
+            val url = intent.getStringExtra("server_url") ?: "unknown"
+            Toast.makeText(this, "Connected to $url", Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -122,8 +123,9 @@ class ControllerActivity : AppCompatActivity(), WebSocketClient.ConnectionListen
 
     override fun onError(error: String) {
         runOnUiThread {
-            connectionIndicator.text = "● Disconnected"
+            connectionIndicator.text = "● Connection failed"
             connectionIndicator.setTextColor(0xFFE74C3C.toInt())
+            Toast.makeText(this, "Connection failed: $error", Toast.LENGTH_LONG).show()
         }
     }
 
