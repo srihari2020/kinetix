@@ -1,6 +1,17 @@
 const { app, BrowserWindow } = require('electron');
 const path = require('path');
-const { spawn } = require('child_process');
+const { spawn, exec } = require('child_process');
+
+function checkServer(callback) {
+    exec("netstat -ano | findstr :8765", (err, stdout) => {
+        if (stdout) {
+            console.log("Server already running");
+            callback(true);
+        } else {
+            callback(false);
+        }
+    });
+}
 
 let mainWindow;
 let pythonProcess = null;
@@ -46,13 +57,13 @@ function createWindow() {
         autoHideMenuBar: true,
     });
 
-    if (isDev) {
+    if (process.env.NODE_ENV === "development") {
         // Wait for the React dev server to start
-        mainWindow.loadURL('http://localhost:5173');
+        mainWindow.loadURL("http://localhost:5173");
         mainWindow.webContents.openDevTools({ mode: 'detach' });
     } else {
         // In production, load the built React app
-        mainWindow.loadFile(path.join(__dirname, '../dist/index.html'));
+        mainWindow.loadFile(path.join(__dirname, "../dist/index.html"));
     }
 
     mainWindow.on('closed', () => {
@@ -61,14 +72,24 @@ function createWindow() {
 }
 
 app.whenReady().then(() => {
-    startPythonServer();
-    createWindow();
+    checkServer((isRunning) => {
+        if (!isRunning) {
+            startPythonServer();
+        }
+        createWindow();
+    });
 
     app.on('activate', () => {
         if (BrowserWindow.getAllWindows().length === 0) {
             createWindow();
         }
     });
+});
+
+app.on('before-quit', () => {
+    if (pythonProcess) {
+        pythonProcess.kill();
+    }
 });
 
 // Kill the python process when the electron app is killed

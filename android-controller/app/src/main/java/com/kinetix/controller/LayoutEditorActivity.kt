@@ -33,15 +33,17 @@ class LayoutEditorActivity : AppCompatActivity() {
 
         // Load active profile layout
         activeProfile = ControllerProfile.getActive(this)
-        activeProfile?.buttonPositions?.let {
-            layoutOverrides.putAll(it)
-            controllerView.layoutOverrides = layoutOverrides
+        
+        activeProfile?.let {
+            if (it.layoutJson.isNotEmpty()) {
+                controllerView.customLayoutJson = it.layoutJson
+            }
         }
 
         // Apply joystick initial positions
-        controllerView.post {
-            applyJoystickPosition(leftJoystick, "left_joystick")
-            applyJoystickPosition(rightJoystick, "right_joystick")
+        leftJoystick.post {
+            applyJoystickPosition(leftJoystick, "left")
+            applyJoystickPosition(rightJoystick, "right")
         }
 
         // Enable edit mode on controllerView
@@ -69,22 +71,59 @@ class LayoutEditorActivity : AppCompatActivity() {
             val profiles = ControllerProfile.loadAll(this)
             val index = profiles.indexOfFirst { it.name == activeProfile?.name }
             if (index >= 0) {
-                profiles[index] = profiles[index].copy(buttonPositions = layoutOverrides)
+                profiles[index] = profiles[index].copy(layoutJson = buildMasterJson())
                 ControllerProfile.saveAll(this, profiles)
                 Toast.makeText(this, "Layout saved to ${profiles[index].name}", Toast.LENGTH_SHORT).show()
                 finish()
             }
         }
     }
+    
+    private fun buildMasterJson(): String {
+        val rootStr = controllerView.exportLayoutJson()
+        val root = try { org.json.JSONObject(rootStr) } catch(e:Exception){ org.json.JSONObject() }
+        val sticksArray = org.json.JSONArray()
+        
+        val lParent = leftJoystick.parent as View
+        val rParent = rightJoystick.parent as View
+        
+        val ljObj = org.json.JSONObject()
+        ljObj.put("id", "left")
+        ljObj.put("x", (leftJoystick.x + leftJoystick.width/2f) / lParent.width)
+        ljObj.put("y", (leftJoystick.y + leftJoystick.height/2f) / lParent.height)
+        ljObj.put("size", 160)
+        sticksArray.put(ljObj)
+        
+        val rjObj = org.json.JSONObject()
+        rjObj.put("id", "right")
+        rjObj.put("x", (rightJoystick.x + rightJoystick.width/2f) / rParent.width)
+        rjObj.put("y", (rightJoystick.y + rightJoystick.height/2f) / rParent.height)
+        rjObj.put("size", 160)
+        sticksArray.put(rjObj)
+        
+        root.put("sticks", sticksArray)
+        return root.toString()
+    }
 
     private fun applyJoystickPosition(view: View, id: String) {
-        layoutOverrides[id]?.let { pos ->
-            val parent = view.parent as View
-            val targetX = pos[0] * parent.width - view.width / 2f
-            val targetY = pos[1] * parent.height - view.height / 2f
-            view.translationX = targetX - view.left
-            view.translationY = targetY - view.top
-        }
+        val jsonStr = activeProfile?.layoutJson ?: return
+        if (jsonStr.isEmpty()) return
+        
+        try {
+            val root = org.json.JSONObject(jsonStr)
+            val sticks = root.optJSONArray("sticks") ?: return
+            for (i in 0 until sticks.length()) {
+                val obj = sticks.getJSONObject(i)
+                if (obj.optString("id") == id) {
+                    val cx = obj.optDouble("x").toFloat()
+                    val cy = obj.optDouble("y").toFloat()
+                    val parent = view.parent as View
+                    view.x = cx * parent.width - view.width / 2f
+                    view.y = cy * parent.height - view.height / 2f
+                    break
+                }
+            }
+        } catch (e: Exception) {}
     }
 
     private fun setupDraggable(view: View, id: String) {
@@ -120,22 +159,12 @@ class LayoutEditorActivity : AppCompatActivity() {
         }
     }
 
-    @Suppress("DEPRECATION")
     private fun goImmersive() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            window.insetsController?.let { ctrl ->
-                ctrl.hide(WindowInsets.Type.systemBars())
-                ctrl.systemBarsBehavior = WindowInsetsController.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
-            }
-        } else {
-            window.decorView.systemUiVisibility = (
-                View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
-                    or View.SYSTEM_UI_FLAG_FULLSCREEN
-                    or View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
-                    or View.SYSTEM_UI_FLAG_LAYOUT_STABLE
-                    or View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
-                    or View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
-            )
+        androidx.core.view.WindowCompat.setDecorFitsSystemWindows(window, false)
+        androidx.core.view.WindowInsetsControllerCompat(window, window.decorView).let { controller ->
+            controller.hide(androidx.core.view.WindowInsetsCompat.Type.systemBars())
+            controller.systemBarsBehavior = androidx.core.view.WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
         }
+        supportActionBar?.hide()
     }
 }

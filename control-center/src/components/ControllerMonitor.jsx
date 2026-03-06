@@ -1,9 +1,11 @@
-import { Gamepad2 } from 'lucide-react';
-import { useState } from 'react';
+import { FaGamepad } from 'react-icons/fa';
+import { useState, useEffect, useRef } from 'react';
+import anime from 'animejs';
 
 // Controller visualizer component
 export default function ControllerMonitor({ liveData, devices }) {
     const [activeTab, setActiveTab] = useState(0);
+    const prevButtonsRef = useRef(0);
 
     // Default neutral input
     const input = liveData[activeTab] || {
@@ -13,6 +15,22 @@ export default function ControllerMonitor({ liveData, devices }) {
         buttons: 0,
         dpad: 0
     };
+
+    useEffect(() => {
+        // Trigger button press animation when a new button goes down
+        const changed = input.buttons ^ prevButtonsRef.current;
+        const pressed = changed & input.buttons;
+
+        if (pressed > 0) {
+            anime({
+                targets: '.action-btn.active',
+                scale: [0.8, 1.2, 1],
+                duration: 300,
+                easing: 'easeOutElastic(1, .8)'
+            });
+        }
+        prevButtonsRef.current = input.buttons;
+    }, [input.buttons]);
 
     const getJoystickTransform = (x, y) => {
         // scale -32768..32767 to -15px..15px
@@ -28,7 +46,7 @@ export default function ControllerMonitor({ liveData, devices }) {
     return (
         <div className="panel" style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
             <div className="panel-header" style={{ marginBottom: '0.5rem' }}>
-                <Gamepad2 size={20} /> Controller Monitor
+                <FaGamepad size={20} /> Controller Monitor
             </div>
 
             {/* Player Tabs */}
@@ -106,15 +124,15 @@ export default function ControllerMonitor({ liveData, devices }) {
                     </div>
 
                     {/* Action Buttons */}
-                    <div style={{ position: 'absolute', top: '70px', right: '70px', width: '80px', height: '80px', position: 'relative' }}>
+                    <div style={{ position: 'absolute', top: '70px', right: '70px', width: '80px', height: '80px' }}>
                         {/* Y */}
-                        <div style={{ position: 'absolute', top: '-10px', left: '30px', width: '24px', height: '24px', borderRadius: '50%', backgroundColor: isBtnPressed(input.buttons, 8) ? '#facc15' : '#333' }} />
+                        <div className={`action-btn ${isBtnPressed(input.buttons, 8) ? 'active' : ''}`} style={{ position: 'absolute', top: '-10px', left: '30px', width: '24px', height: '24px', borderRadius: '50%', backgroundColor: isBtnPressed(input.buttons, 8) ? '#facc15' : '#333' }} />
                         {/* X */}
-                        <div style={{ position: 'absolute', top: '25px', left: '-5px', width: '24px', height: '24px', borderRadius: '50%', backgroundColor: isBtnPressed(input.buttons, 4) ? '#3b82f6' : '#333' }} />
+                        <div className={`action-btn ${isBtnPressed(input.buttons, 4) ? 'active' : ''}`} style={{ position: 'absolute', top: '25px', left: '-5px', width: '24px', height: '24px', borderRadius: '50%', backgroundColor: isBtnPressed(input.buttons, 4) ? '#3b82f6' : '#333' }} />
                         {/* B */}
-                        <div style={{ position: 'absolute', top: '25px', right: '-15px', width: '24px', height: '24px', borderRadius: '50%', backgroundColor: isBtnPressed(input.buttons, 2) ? '#ef4444' : '#333' }} />
+                        <div className={`action-btn ${isBtnPressed(input.buttons, 2) ? 'active' : ''}`} style={{ position: 'absolute', top: '25px', right: '-15px', width: '24px', height: '24px', borderRadius: '50%', backgroundColor: isBtnPressed(input.buttons, 2) ? '#ef4444' : '#333' }} />
                         {/* A */}
-                        <div style={{ position: 'absolute', bottom: '-5px', left: '30px', width: '24px', height: '24px', borderRadius: '50%', backgroundColor: isBtnPressed(input.buttons, 1) ? '#22c55e' : '#333' }} />
+                        <div className={`action-btn ${isBtnPressed(input.buttons, 1) ? 'active' : ''}`} style={{ position: 'absolute', bottom: '-5px', left: '30px', width: '24px', height: '24px', borderRadius: '50%', backgroundColor: isBtnPressed(input.buttons, 1) ? '#22c55e' : '#333' }} />
                     </div>
                 </div>
             </div>

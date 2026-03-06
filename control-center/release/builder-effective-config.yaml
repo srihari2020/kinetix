@@ -3,6 +3,11 @@ directories:
   buildResources: build
 appId: com.kinetix.controlcenter
 productName: Kinetix Control Center
+files:
+  - filter:
+      - dist/**/*
+      - electron/**/*
+      - package.json
 asar: true
 compression: maximum
 win:
@@ -15,5 +20,4 @@ extraResources:
     to: plugins
     filter:
       - '**/*'
-files: []
 electronVersion: 40.7.0

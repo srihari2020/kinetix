@@ -19,7 +19,7 @@ data class ControllerProfile(
     val vibrationEnabled: Boolean = true,
     val vibrationIntensity: Float = 1.0f,
     val sendRateHz: Int = 120,
-    val buttonPositions: Map<String, FloatArray> = emptyMap()  // id → [x%, y%]
+    val layoutJson: String = ""
 ) {
     companion object {
         private const val PREFS_NAME = "kinetix_profiles"

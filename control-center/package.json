@@ -15,6 +15,11 @@
   "build": {
     "appId": "com.kinetix.controlcenter",
     "productName": "Kinetix Control Center",
+    "files": [
+      "dist/**/*",
+      "electron/**/*",
+      "package.json"
+    ],
     "directories": {
       "output": "release"
     },
@@ -39,9 +44,11 @@
     ]
   },
   "dependencies": {
+    "animejs": "^4.3.6",
     "lucide-react": "^0.577.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
+    "react-icons": "^5.6.0",
     "recharts": "^3.7.0"
   },
   "devDependencies": {

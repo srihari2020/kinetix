@@ -35,6 +35,16 @@ class ControllerView @JvmOverloads constructor(
                 invalidate()
             }
         }
+    var customLayoutJson: String = ""
+        set(value) {
+            field = value
+            if (width > 0 && height > 0) {
+                buttons.clear()
+                dpadButtons.clear()
+                layoutButtons(width.toFloat(), height.toFloat())
+                invalidate()
+            }
+        }
     var isEditMode = false
     var onLayoutChanged: ((Map<String, FloatArray>) -> Unit)? = null
     private var draggedButton: String? = null
@@ -89,6 +99,13 @@ class ControllerView @JvmOverloads constructor(
         color = Color.TRANSPARENT
     }
     private val btnPaint = Paint(Paint.ANTI_ALIAS_FLAG)
+    private val ripplePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        style = Paint.Style.STROKE
+        strokeWidth = 6f
+        color = Color.WHITE
+    }
+    private data class Ripple(val x: Float, val y: Float, var radius: Float, var alpha: Int = 150)
+    private val ripples = mutableListOf<Ripple>()
     private val textPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         textAlign = Paint.Align.CENTER
         typeface = Typeface.create("sans-serif-medium", Typeface.BOLD)
@@ -133,6 +150,76 @@ class ControllerView @JvmOverloads constructor(
     }
 
     private fun layoutButtons(w: Float, h: Float) {
+        if (customLayoutJson.isNotBlank()) {
+            try {
+                val root = org.json.JSONObject(customLayoutJson)
+                val btnsArray = root.optJSONArray("buttons")
+                if (btnsArray != null) {
+                    for (i in 0 until btnsArray.length()) {
+                        val obj = btnsArray.getJSONObject(i)
+                        val id = obj.getString("id")
+                        val cx = obj.getDouble("x").toFloat() * w
+                        val cy = obj.getDouble("y").toFloat() * h
+                        val sizeRaw = obj.optDouble("size", 120.0).toFloat()
+                        val r = (sizeRaw * resources.displayMetrics.density) / 4f
+
+                        var col = colMenu
+                        var pressedCol = colMenuDark
+                        var isCirc = true
+                        var label = id.uppercase()
+                        when(label) {
+                            "A" -> { col = colGreen; pressedCol = colGreenDark }
+                            "B" -> { col = colRed; pressedCol = colRedDark }
+                            "X" -> { col = colBlue; pressedCol = colBlueDark }
+                            "Y" -> { col = colYellow; pressedCol = colYellowDark; }
+                            "LB", "RB" -> { col = colBumper; pressedCol = colBumperDark; isCirc = false }
+                        }
+                        
+                        if (id.startsWith("dpad")) {
+                            dpadButtons += GameButton(id, label, circleRect(cx, cy, r), color = colDpad, pressedColor = colDpadDark)
+                        } else {
+                            buttons += GameButton(id, label, circleRect(cx, cy, r), color = col, pressedColor = pressedCol, isCircle = isCirc, textColor = if (label=="Y") Color.parseColor("#333333") else Color.WHITE)
+                        }
+                    }
+                }
+                val bumpY = h * 0.02f
+                val bumpH = h * 0.09f
+                val trigW = w * 0.13f
+                val trigH = h * 0.16f
+                val trigY = bumpY + bumpH + h * 0.02f
+                ltRect = RectF(w * 0.05f, trigY, w * 0.05f + trigW, trigY + trigH)
+                rtRect = RectF(w * 0.82f, trigY, w * 0.82f + trigW, trigY + trigH)
+            } catch (e: Exception) {
+                e.printStackTrace()
+                buildDefaultLayout(w, h)
+            }
+        } else {
+            buildDefaultLayout(w, h)
+        }
+
+        // Apply overrides
+        for (btn in buttons + dpadButtons) {
+            layoutOverrides[btn.id]?.let { override ->
+                val newCx = w * override[0]
+                val newCy = h * override[1]
+                val dx = newCx - btn.rect.centerX()
+                val dy = newCy - btn.rect.centerY()
+                btn.rect.offset(dx, dy)
+            }
+        }
+        layoutOverrides["lt_zone"]?.let { override ->
+            val newCx = w * override[0]
+            val newCy = h * override[1]
+            ltRect.offset(newCx - ltRect.centerX(), newCy - ltRect.centerY())
+        }
+        layoutOverrides["rt_zone"]?.let { override ->
+            val newCx = w * override[0]
+            val newCy = h * override[1]
+            rtRect.offset(newCx - rtRect.centerX(), newCy - rtRect.centerY())
+        }
+    }
+
+    private fun buildDefaultLayout(w: Float, h: Float) {
         // Face buttons (ABXY) – right side, diamond layout
         val fbCx = w * 0.82f
         val fbCy = h * 0.52f
@@ -206,6 +293,24 @@ class ControllerView @JvmOverloads constructor(
         }
     }
 
+    fun exportLayoutJson(): String {
+        val root = org.json.JSONObject()
+        val btnsArray = org.json.JSONArray()
+        val allBtns = buttons + dpadButtons
+        for (btn in allBtns) {
+            val obj = org.json.JSONObject()
+            obj.put("id", btn.id)
+            obj.put("x", btn.rect.centerX() / width)
+            obj.put("y", btn.rect.centerY() / height)
+            val radiusPx = btn.rect.width() / 2f
+            val sizeDp = (radiusPx * 4f) / resources.displayMetrics.density
+            obj.put("size", sizeDp.toInt())
+            btnsArray.put(obj)
+        }
+        root.put("buttons", btnsArray)
+        return root.toString()
+    }
+
     private fun circleRect(cx: Float, cy: Float, r: Float) =
         RectF(cx - r, cy - r, cx + r, cy + r)
 
@@ -223,10 +328,33 @@ class ControllerView @JvmOverloads constructor(
         // Triggers (analog bars)
         drawTrigger(canvas, ltRect, ltValue, "LT", ltPressed)
         drawTrigger(canvas, rtRect, rtValue, "RT", rtPressed)
+
+        // Draw Ripples
+        val it = ripples.iterator()
+        while(it.hasNext()) {
+            val r = it.next()
+            ripplePaint.alpha = r.alpha
+            canvas.drawCircle(r.x, r.y, r.radius, ripplePaint)
+            r.radius += 8f
+            r.alpha -= 12
+            if (r.alpha <= 0) it.remove()
+        }
+        if (ripples.isNotEmpty()) invalidate()
     }
 
     private fun drawButton(canvas: Canvas, btn: GameButton) {
         btnPaint.color = if (btn.pressed) btn.pressedColor else btn.color
+
+        if (btn.pressed) {
+            val activePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                style = Paint.Style.FILL
+                maskFilter = BlurMaskFilter(15f, BlurMaskFilter.Blur.OUTER)
+                color = btn.pressedColor
+                alpha = 255
+            }
+            if (btn.isCircle) canvas.drawCircle(btn.rect.centerX(), btn.rect.centerY(), btn.rect.width()/2f, activePaint)
+            else canvas.drawRoundRect(btn.rect, btn.rect.height()*0.35f, btn.rect.height()*0.35f, activePaint)
+        }
 
         if (btn.isCircle) {
             val cx = btn.rect.centerX()
@@ -428,11 +556,17 @@ class ControllerView @JvmOverloads constructor(
         var changed = false
         for (btn in buttons) {
             val nowPressed = btn.id in allPressed
-            if (btn.pressed != nowPressed) { btn.pressed = nowPressed; changed = true }
+            if (btn.pressed != nowPressed) { 
+                btn.pressed = nowPressed; changed = true 
+                if (nowPressed) ripples.add(Ripple(btn.rect.centerX(), btn.rect.centerY(), btn.rect.width() / 2f))
+            }
         }
         for (btn in dpadButtons) {
             val nowPressed = btn.id in allPressed
-            if (btn.pressed != nowPressed) { btn.pressed = nowPressed; changed = true }
+            if (btn.pressed != nowPressed) { 
+                btn.pressed = nowPressed; changed = true 
+                if (nowPressed) ripples.add(Ripple(btn.rect.centerX(), btn.rect.centerY(), btn.rect.width() / 2f))
+            }
         }
 
         // Haptic on new presses

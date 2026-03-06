@@ -1,4 +1,4 @@
-import { Activity, Wifi } from 'lucide-react';
+import { FaNetworkWired } from 'react-icons/fa';
 import { AreaChart, Area, ResponsiveContainer, YAxis, Tooltip } from 'recharts';
 import { useState, useEffect } from 'react';
 
@@ -16,7 +16,7 @@ export default function NetworkStats({ stats }) {
     return (
         <div className="panel" style={{ flex: 1, minHeight: '220px' }}>
             <div className="panel-header">
-                <Wifi size={20} /> Network Statistics
+                <FaNetworkWired size={20} /> Network Statistics
             </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: '1rem', marginBottom: '1.5rem' }}>

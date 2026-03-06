@@ -1,4 +1,4 @@
-import { Terminal } from 'lucide-react';
+import { FaTerminal } from 'react-icons/fa';
 import { useEffect, useRef } from 'react';
 
 export default function LogsViewer({ logs }) {
@@ -14,7 +14,7 @@ export default function LogsViewer({ logs }) {
     return (
         <div className="panel" style={{ flex: '1.5', minHeight: 0, display: 'flex', flexDirection: 'column' }}>
             <div className="panel-header">
-                <Terminal size={20} /> Server Logs
+                <FaTerminal size={20} /> Server Logs
             </div>
 
             <div

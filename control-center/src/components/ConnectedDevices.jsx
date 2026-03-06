@@ -1,4 +1,5 @@
-import { Smartphone, Battery, Signal, X } from 'lucide-react';
+import { FaMobileAlt, FaTimes } from 'react-icons/fa';
+import { Activity } from 'lucide-react'; // kept locally below
 
 export default function ConnectedDevices({ devices }) {
     const getAvatarColor = (index) => {
@@ -10,7 +11,7 @@ export default function ConnectedDevices({ devices }) {
         <div className="panel" style={{ flex: 1, minHeight: 0 }}>
             <div className="panel-header" style={{ display: 'flex', justifyContent: 'space-between' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                    <Smartphone size={20} />
+                    <FaMobileAlt size={20} />
                     Connected Devices
                 </div>
                 <span style={{ fontSize: '0.875rem', backgroundColor: 'var(--bg-panel-hover)', padding: '0.1rem 0.5rem', borderRadius: '1rem' }}>
@@ -57,7 +58,7 @@ export default function ConnectedDevices({ devices }) {
                             </div>
 
                             <button className="btn-outline" style={{ padding: '0.25rem', border: 'none', color: 'var(--danger)' }} title="Disconnect">
-                                <X size={18} />
+                                <FaTimes size={18} />
                             </button>
                         </div>
                     ))

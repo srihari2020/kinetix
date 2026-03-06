@@ -109,6 +109,33 @@ class ControllerActivity : AppCompatActivity(), WebSocketClient.ConnectionListen
         // Wire joysticks
         leftJoystick.onPositionChanged = { x, y -> lx = x; ly = y }
         rightJoystick.onPositionChanged = { x, y -> rx = x; ry = y }
+        
+        if (profile.layoutJson.isNotEmpty()) {
+            controllerView.customLayoutJson = profile.layoutJson
+            controllerView.post {
+                try {
+                    val root = JSONObject(profile.layoutJson)
+                    val sticks = root.optJSONArray("sticks")
+                    if (sticks != null) {
+                        for (i in 0 until sticks.length()) {
+                            val obj = sticks.getJSONObject(i)
+                            val id = obj.optString("id")
+                            val cx = obj.optDouble("x").toFloat()
+                            val cy = obj.optDouble("y").toFloat()
+                            
+                            val parent = leftJoystick.parent as View
+                            if (id == "left") {
+                                leftJoystick.x = cx * parent.width - leftJoystick.width / 2f
+                                leftJoystick.y = cy * parent.height - leftJoystick.height / 2f
+                            } else if (id == "right") {
+                                rightJoystick.x = cx * parent.width - rightJoystick.width / 2f
+                                rightJoystick.y = cy * parent.height - rightJoystick.height / 2f
+                            }
+                        }
+                    }
+                } catch (e: Exception) {}
+            }
+        }
 
         // Wire buttons
         controllerView.onStateChanged = { state -> buttonState = state }
@@ -345,23 +372,12 @@ class ControllerActivity : AppCompatActivity(), WebSocketClient.ConnectionListen
 
     // ── Immersive mode ───────────────────────────────────────────────
 
-    @Suppress("DEPRECATION")
     private fun goImmersive() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            window.insetsController?.let { ctrl ->
-                ctrl.hide(WindowInsets.Type.systemBars())
-                ctrl.systemBarsBehavior =
-                    WindowInsetsController.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
-            }
-        } else {
-            window.decorView.systemUiVisibility = (
-                View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
-                    or View.SYSTEM_UI_FLAG_FULLSCREEN
-                    or View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
-                    or View.SYSTEM_UI_FLAG_LAYOUT_STABLE
-                    or View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
-                    or View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
-                )
+        androidx.core.view.WindowCompat.setDecorFitsSystemWindows(window, false)
+        androidx.core.view.WindowInsetsControllerCompat(window, window.decorView).let { controller ->
+            controller.hide(androidx.core.view.WindowInsetsCompat.Type.systemBars())
+            controller.systemBarsBehavior = androidx.core.view.WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
         }
+        supportActionBar?.hide()
     }
 }

@@ -1,4 +1,4 @@
-import { Activity, Play, Square, Settings } from 'lucide-react';
+import { FaServer, FaPlay, FaSquare, FaCog } from 'react-icons/fa';
 
 export default function ServerStatus({ state }) {
     const isRunning = state?.status === 'running';
@@ -6,7 +6,7 @@ export default function ServerStatus({ state }) {
     return (
         <div className="panel server-status">
             <div className="panel-header">
-                <Activity size={20} className={isRunning ? 'active' : ''} />
+                <FaServer size={20} className={isRunning ? 'active' : ''} />
                 Server Status
             </div>
 
@@ -31,15 +31,15 @@ export default function ServerStatus({ state }) {
             <div style={{ display: 'flex', gap: '0.75rem', marginTop: 'auto' }}>
                 {isRunning ? (
                     <button className="btn-danger" style={{ flex: 1, display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '0.5rem' }}>
-                        <Square size={16} /> Stop Server
+                        <FaSquare size={16} /> Stop Server
                     </button>
                 ) : (
                     <button className="btn-primary" style={{ flex: 1, display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '0.5rem' }}>
-                        <Play size={16} /> Start Server
+                        <FaPlay size={16} /> Start Server
                     </button>
                 )}
                 <button className="btn-outline" style={{ padding: '0.5rem' }} title="Server Settings">
-                    <Settings size={20} />
+                    <FaCog size={20} />
                 </button>
             </div>
         </div>

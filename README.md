@@ -1,109 +1,73 @@
 # 🎮 Kinetix
 
-**Turn your Android phone into a wireless Xbox controller for PC games.**
+> **Next-generation Android-to-PC Gamepad Controller**
 
-Kinetix is a professional phone-to-PC controller system that transforms any Android phone into a full Xbox 360 gamepad — complete with analog sticks, triggers, bumpers, face buttons, d-pad, gyroscope aiming, and haptic feedback.
+Kinetix transforms your Android smartphone into a professional-grade wireless game controller for your PC. Move beyond simple virtual buttons—Kinetix offers competitive latency (up to 120Hz refresh rate), real haptic feedback, customizable dynamic layouts, and physical gyroscope support for precise aiming and steering. 
+
+Whether you need an extra controller for spontaneous split-screen multiplayer, or a dedicated racing wheel utilizing the gyroscope, Kinetix is built for flexibility and performance.
+
+---
 
 ## ✨ Features
+- **Ultra-Low Latency:** Optimized UDP and WebSocket packet delivery allowing up to 120Hz input polling.
+- **Dynamic Layouts:** Customize, drag and drop, and resize your virtual buttons using JSON-driven controller profiles (FPS, Driving, Default, etc.).
+- **True Fullscreen Immersion:** Actionbar-free edge-to-edge Android experience for zero distractions.
+- **Advanced Feedback:** Enjoy tactile responses with real-time ripple & glow animations, and haptic vibration integration.
+- **Gyroscope Integration:** Map your phone's physical movements to analog sticks or triggers for precise steering in racing games or aiming in shooters.
+- **Glassmorphism Control Center:** A beautiful, responsive React/Electron dashboard for managing your server, tuning settings, and visualizing controller inputs in real-time.
 
-| Feature | Description |
-|---|---|
-| **Full Xbox Layout** | Dual analog sticks, A/B/X/Y, LB/RB, LT/RT, D-pad, Start/Select |
-| **120 Hz Input** | Binary UDP packets for ultra-low latency |
-| **4 Players** | Connect up to 4 phones simultaneously |
-| **Auto Discovery** | Server automatically found on LAN — no IP needed |
-| **Gyroscope Aiming** | Tilt phone to aim (right stick mapping) |
-| **Vibration Feedback** | Rumble events forwarded from games to phone |
-| **Controller Profiles** | Default, FPS Mode, Driving Mode (customizable) |
-| **Custom Layout** | Drag buttons to reposition |
-| **System Tray** | Server runs silently with tray icon |
-| **Battery Indicator** | See phone battery while playing |
-| **Start With Windows** | Optional autostart on boot |
+---
 
-## ✨ What's New in v3.0
+## 🚀 Installation & Setup
 
-- **Plugin System:** Drop Python scripts into `plugins/` to intercept and manipulate input (e.g., Gyro Mouse, Macro engines).
-- **WebRTC Networking:** Ultra-low latency DataChannels alongside standard UDP fallback.
-- **Controller Profiles:** Save custom button layouts and gyro sensitivities, and auto-load them based on the active Windows game.
-- **Visual Layout Editor:** Drag and drop buttons on your Android phone to build your perfect controller.
-- **Network Telemetry:** Real-time dashboards showing jitter, packets per second, and loss percentage in the React Control Center.
+### 1. Requirements
+- A Windows PC (for Kinetix Server + Control Center)
+- An Android Phone (Android 11.0+ recommended)
+- **Dependencies:** 
+  - [ViGEmBus Driver](https://github.com/ViGEm/ViGEmBus) (Required for translating Android inputs to Windows Xbox 360 controller inputs).
+  - Node.js (for building/running the PC Control Center).
+  - Python 3.10+ (for the PC backend server).
 
-See the full architectural breakdown of v3 in [docs/v3_architecture.md](docs/v3_architecture.md).
-
-## 📦 Components
-
-```
-kinetix/
-├── android-controller/     Android app (Kotlin)
-├── pc-server/              PC server (Python)
-├── installer/              Windows installer (Inno Setup)
-├── docs/                   Architecture & protocol docs
-├── scripts/                Build scripts
-└── README.md
-```
-
-## 🚀 Quick Start
-
-### PC Server
-
-1. Install [ViGEmBus driver](https://github.com/ViGEm/ViGEmBus/releases)
-2. Install Python 3.10+
-3. Run the server:
+### 2. PC Server Setup
+1. **Clone the repository:**
+   ```bash
+   git clone https://github.com/YOUR_USERNAME/Kinetix.git
+   cd Kinetix
+   ```
+2. **Install Python dependencies:**
    ```bash
    cd pc-server
    pip install -r requirements.txt
+   ```
+3. **Run the Kinetix Server:**
+   ```bash
    python server.py
    ```
-4. The server shows your LAN IP — or the Android app finds it automatically.
+4. **Launch the Control Center Dashboard:**
+   Open a new terminal session.
+   ```bash
+   cd control-center
+   npm install
+   npm run dev
+   ```
+   *(Or build the production version with `npm run build` and run electron directly)*
 
-### Android App
+### 3. Android App Setup
+1. Open the `/android-controller` directory in **Android Studio**.
+2. Sync the Gradle project and build the APK.
+3. Install the APK on your Android device.
+4. Make sure your phone and PC are on the **same Wi-Fi network**.
+5. Launch the Kinetix app on your phone. It will automatically scan the LAN for your PC Server, or you can manually enter the PC's IP address.
 
-1. Open the project in Android Studio
-2. Build and install on your phone
-3. Launch Kinetix — it discovers the server automatically
-4. Tap the server to connect
-5. Play!
+---
 
-### Windows Installer
+## 🛠 Build Instructions
+The project is split into three main parts:
+1. `pc-server/`: Python backend utilizing `fastapi`, `websockets`, `uvicorn`, and `vgamepad`.
+2. `control-center/`: React + Vite + Electron dashboard.
+3. `android-controller/`: Native Android app written in Kotlin.
 
-A one-click installer is available:
+---
 
-1. Build the server: `cd pc-server && build.bat`
-2. Compile installer: open `installer/kinetix-installer.iss` in [Inno Setup](https://jrsoftware.org/isinfo.php)
-3. Distribute `KinetixServerSetup.exe`
-
-## 🌐 Network Ports
-
-| Port | Protocol | Purpose |
-|---|---|---|
-| 5742 | UDP broadcast | Auto-discovery |
-| 5743 | UDP | Controller input (120 Hz) |
-| 8765 | WebSocket | Control channel |
-
-## 🏗 Architecture
-
-See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the full system diagram.
-
-## 📡 Protocol
-
-See [docs/PROTOCOL.md](docs/PROTOCOL.md) for the binary packet format and WebSocket message types.
-
-## 🎯 Requirements
-
-**PC:**
-- Windows 10/11 (64-bit)
-- ViGEmBus driver installed
-- Python 3.10+ (or use the standalone .exe)
-
-**Android:**
-- Android 7.0+ (API 24)
-- Target SDK 34 (Android 14 compatible)
-- Same Wi-Fi network as PC
-
-## 🤝 Contributing
-
-See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
-
-## 📄 License
-
-MIT License — see [LICENSE](LICENSE).
+## 📝 License
+Distributed under the MIT License. See `LICENSE` for more information.

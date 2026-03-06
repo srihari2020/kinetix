@@ -1,0 +1,18 @@
+{
+    "active_profile": "Default",
+    "profiles": [
+        {
+            "name": "Default",
+            "gyro_sensitivity": 1.0,
+            "send_rate_hz": 120,
+            "layout": {}
+        },
+        {
+            "name": "FPS Mode",
+            "gyro_sensitivity": 1.5,
+            "send_rate_hz": 120,
+            "layout": {}
+        }
+    ],
+    "game_mappings": {}
+}

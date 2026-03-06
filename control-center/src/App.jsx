@@ -5,7 +5,7 @@ import ConnectedDevices from './components/ConnectedDevices';
 import ControllerMonitor from './components/ControllerMonitor';
 import NetworkStats from './components/NetworkStats';
 import LogsViewer from './components/LogsViewer';
-import { Gamepad2 } from 'lucide-react';
+import { FaGamepad } from 'react-icons/fa';
 
 function App() {
   const [serverState, setServerState] = useState(null);
@@ -77,7 +77,7 @@ function App() {
     <div className="dashboard-grid">
       <header className="dashboard-header">
         <div className="dashboard-title">
-          <Gamepad2 size={32} color="#E94560" />
+          <img src="/kinetix_logo.svg" alt="Kinetix Logo" width="36" height="36" style={{ filter: 'drop-shadow(0 0 8px rgba(233, 69, 96, 0.6))' }} />
           <span>Kinetix Control Center</span>
         </div>
         <div className="dashboard-actions">
