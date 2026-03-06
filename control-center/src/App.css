@@ -37,6 +37,7 @@
 /* Left Sidebar (Status + Devices) */
 .dashboard-left {
   display: flex;
+  min-width: 0;
   flex-direction: column;
   gap: 1.5rem;
   overflow-y: auto;
@@ -45,6 +46,7 @@
 /* Main Content (Monitor) */
 .dashboard-main {
   display: flex;
+  min-width: 0;
   flex-direction: column;
   min-height: 0;
 }
@@ -52,6 +54,7 @@
 /* Right Sidebar (Network + Logs) */
 .dashboard-right {
   display: flex;
+  min-width: 0;
   flex-direction: column;
   gap: 1.5rem;
   min-height: 0;

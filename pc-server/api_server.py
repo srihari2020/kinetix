@@ -115,6 +115,23 @@ def get_logs() -> List[str]:
     # Return the captured logs from memory handler
     return list(mem_handler.logs)
 
+@app.post("/shutdown")
+def shutdown_server() -> Dict[str, str]:
+    import os
+    import signal
+    import threading
+    def kill_soon():
+        import time
+        time.sleep(0.5)
+        # Windows compatibility or generic SIGINT
+        try:
+            os.kill(os.getpid(), signal.CTRL_C_EVENT)
+        except AttributeError:
+            os.kill(os.getpid(), signal.SIGINT)
+            
+    threading.Thread(target=kill_soon).start()
+    return {"status": "shutting down"}
+
 @app.websocket("/ws/live")
 async def websocket_endpoint(websocket: WebSocket):
     global _api_loop

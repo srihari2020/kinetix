@@ -73,7 +73,7 @@ export default function ControllerMonitor({ liveData, devices }) {
             {/* Controller Visualization */}
             <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(0,0,0,0.2)', borderRadius: 'var(--radius-lg)', position: 'relative' }}>
                 <div style={{
-                    width: '500px', height: '300px',
+                    width: '100%', maxWidth: '500px', aspectRatio: '5/3', height: 'auto',
                     border: '2px solid var(--border-subtle)',
                     borderRadius: '150px 150px 100px 100px',
                     position: 'relative',
@@ -82,31 +82,31 @@ export default function ControllerMonitor({ liveData, devices }) {
                 }}>
                     {/* Triggers (LT / RT) */}
                     <div style={{
-                        position: 'absolute', top: '-15px', left: '80px', width: '60px', height: '20px',
+                        position: 'absolute', top: '-5%', left: '16%', width: '12%', height: '6.6%',
                         backgroundColor: '#374151', borderRadius: '4px', overflow: 'hidden'
                     }}>
                         <div style={{ width: '100%', height: `${(input.lt / 65535) * 100}%`, backgroundColor: 'var(--accent-color)', position: 'absolute', bottom: 0 }} />
                     </div>
                     <div style={{
-                        position: 'absolute', top: '-15px', right: '80px', width: '60px', height: '20px',
+                        position: 'absolute', top: '-5%', right: '16%', width: '12%', height: '6.6%',
                         backgroundColor: '#374151', borderRadius: '4px', overflow: 'hidden'
                     }}>
                         <div style={{ width: '100%', height: `${(input.rt / 65535) * 100}%`, backgroundColor: 'var(--accent-color)', position: 'absolute', bottom: 0 }} />
                     </div>
 
                     {/* D-PAD */}
-                    <div className={`dpad ${input.dpad > 0 ? 'active' : ''}`} style={{ position: 'absolute', bottom: '80px', left: '120px', width: '50px', height: '50px', backgroundColor: '#111', borderRadius: '5px' }}>
+                    <div className={`dpad ${input.dpad > 0 ? 'active' : ''}`} style={{ position: 'absolute', bottom: '26.6%', left: '24%', width: '10%', height: '16.6%', backgroundColor: '#111', borderRadius: '5px' }}>
                         {/* Simplified dpad visual */}
-                        <div style={{ position: 'absolute', top: 0, left: '15px', width: '20px', height: '15px', backgroundColor: [1, 5, 6].includes(input.dpad) ? 'var(--accent-color)' : '#333' }} />
-                        <div style={{ position: 'absolute', bottom: 0, left: '15px', width: '20px', height: '15px', backgroundColor: [2, 7, 8].includes(input.dpad) ? 'var(--accent-color)' : '#333' }} />
-                        <div style={{ position: 'absolute', left: 0, top: '15px', width: '15px', height: '20px', backgroundColor: [3, 5, 7].includes(input.dpad) ? 'var(--accent-color)' : '#333' }} />
-                        <div style={{ position: 'absolute', right: 0, top: '15px', width: '15px', height: '20px', backgroundColor: [4, 6, 8].includes(input.dpad) ? 'var(--accent-color)' : '#333' }} />
+                        <div style={{ position: 'absolute', top: 0, left: '30%', width: '40%', height: '30%', backgroundColor: [1, 5, 6].includes(input.dpad) ? 'var(--accent-color)' : '#333' }} />
+                        <div style={{ position: 'absolute', bottom: 0, left: '30%', width: '40%', height: '30%', backgroundColor: [2, 7, 8].includes(input.dpad) ? 'var(--accent-color)' : '#333' }} />
+                        <div style={{ position: 'absolute', left: '0', top: '30%', width: '30%', height: '40%', backgroundColor: [3, 5, 7].includes(input.dpad) ? 'var(--accent-color)' : '#333' }} />
+                        <div style={{ position: 'absolute', right: '0', top: '30%', width: '30%', height: '40%', backgroundColor: [4, 6, 8].includes(input.dpad) ? 'var(--accent-color)' : '#333' }} />
                     </div>
 
                     {/* Left Joystick */}
-                    <div style={{ position: 'absolute', top: '80px', left: '80px', width: '60px', height: '60px', backgroundColor: '#111', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <div style={{ position: 'absolute', top: '26.6%', left: '16%', width: '12%', height: '20%', backgroundColor: '#111', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                         <div style={{
-                            width: '36px', height: '36px', backgroundColor: '#4b5563', borderRadius: '50%',
+                            width: '60%', height: '60%', backgroundColor: '#4b5563', borderRadius: '50%',
                             transform: getJoystickTransform(input.lx, input.ly),
                             transition: 'transform 0.05s linear',
                             boxShadow: '0 4px 6px rgba(0,0,0,0.5)'
@@ -114,9 +114,9 @@ export default function ControllerMonitor({ liveData, devices }) {
                     </div>
 
                     {/* Right Joystick */}
-                    <div style={{ position: 'absolute', bottom: '70px', right: '150px', width: '60px', height: '60px', backgroundColor: '#111', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <div style={{ position: 'absolute', bottom: '23.3%', right: '30%', width: '12%', height: '20%', backgroundColor: '#111', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                         <div style={{
-                            width: '36px', height: '36px', backgroundColor: '#4b5563', borderRadius: '50%',
+                            width: '60%', height: '60%', backgroundColor: '#4b5563', borderRadius: '50%',
                             transform: getJoystickTransform(input.rx, input.ry),
                             transition: 'transform 0.05s linear',
                             boxShadow: '0 4px 6px rgba(0,0,0,0.5)'
@@ -124,15 +124,15 @@ export default function ControllerMonitor({ liveData, devices }) {
                     </div>
 
                     {/* Action Buttons */}
-                    <div style={{ position: 'absolute', top: '70px', right: '70px', width: '80px', height: '80px' }}>
+                    <div style={{ position: 'absolute', top: '23.3%', right: '14%', width: '16%', height: '26.6%' }}>
                         {/* Y */}
-                        <div className={`action-btn ${isBtnPressed(input.buttons, 8) ? 'active' : ''}`} style={{ position: 'absolute', top: '-10px', left: '30px', width: '24px', height: '24px', borderRadius: '50%', backgroundColor: isBtnPressed(input.buttons, 8) ? '#facc15' : '#333' }} />
+                        <div className={`action-btn ${isBtnPressed(input.buttons, 8) ? 'active' : ''}`} style={{ position: 'absolute', top: '-12.5%', left: '37.5%', width: '30%', height: '30%', borderRadius: '50%', backgroundColor: isBtnPressed(input.buttons, 8) ? '#facc15' : '#333' }} />
                         {/* X */}
-                        <div className={`action-btn ${isBtnPressed(input.buttons, 4) ? 'active' : ''}`} style={{ position: 'absolute', top: '25px', left: '-5px', width: '24px', height: '24px', borderRadius: '50%', backgroundColor: isBtnPressed(input.buttons, 4) ? '#3b82f6' : '#333' }} />
+                        <div className={`action-btn ${isBtnPressed(input.buttons, 4) ? 'active' : ''}`} style={{ position: 'absolute', top: '31.25%', left: '-6.25%', width: '30%', height: '30%', borderRadius: '50%', backgroundColor: isBtnPressed(input.buttons, 4) ? '#3b82f6' : '#333' }} />
                         {/* B */}
-                        <div className={`action-btn ${isBtnPressed(input.buttons, 2) ? 'active' : ''}`} style={{ position: 'absolute', top: '25px', right: '-15px', width: '24px', height: '24px', borderRadius: '50%', backgroundColor: isBtnPressed(input.buttons, 2) ? '#ef4444' : '#333' }} />
+                        <div className={`action-btn ${isBtnPressed(input.buttons, 2) ? 'active' : ''}`} style={{ position: 'absolute', top: '31.25%', right: '-18.75%', width: '30%', height: '30%', borderRadius: '50%', backgroundColor: isBtnPressed(input.buttons, 2) ? '#ef4444' : '#333' }} />
                         {/* A */}
-                        <div className={`action-btn ${isBtnPressed(input.buttons, 1) ? 'active' : ''}`} style={{ position: 'absolute', bottom: '-5px', left: '30px', width: '24px', height: '24px', borderRadius: '50%', backgroundColor: isBtnPressed(input.buttons, 1) ? '#22c55e' : '#333' }} />
+                        <div className={`action-btn ${isBtnPressed(input.buttons, 1) ? 'active' : ''}`} style={{ position: 'absolute', bottom: '-6.25%', left: '37.5%', width: '30%', height: '30%', borderRadius: '50%', backgroundColor: isBtnPressed(input.buttons, 1) ? '#22c55e' : '#333' }} />
                     </div>
                 </div>
             </div>
