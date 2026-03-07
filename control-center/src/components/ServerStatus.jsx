@@ -1,4 +1,4 @@
-import { FaServer, FaPlay, FaSquare, FaCog, FaTimes } from 'react-icons/fa';
+import { FaServer, FaPlay, FaSquare, FaCog, FaTimes, FaGlobe, FaProjectDiagram, FaGamepad } from 'react-icons/fa';
 import { useState } from 'react';
 
 export default function ServerStatus({ state }) {
@@ -20,22 +20,22 @@ export default function ServerStatus({ state }) {
                 Server Status
             </div>
 
-            <div style={{ marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                <div className={`status-dot ${isRunning ? 'active' : 'offline'}`}></div>
-                <div style={{ fontSize: '1.25rem', fontWeight: 600 }}>
+            <div style={{ marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '1rem', padding: '1rem', backgroundColor: 'var(--bg-panel-hover)', borderRadius: 'var(--radius-md)' }}>
+                <div className={`status-dot ${isRunning ? 'active' : 'offline'}`} style={{ transform: 'scale(1.5)' }}></div>
+                <div style={{ fontSize: '1.5rem', fontWeight: 700, letterSpacing: '-0.5px' }}>
                     {isRunning ? 'Online' : 'Offline'}
                 </div>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'auto 1fr', gap: '0.75rem 1.5rem', marginBottom: '1.5rem' }}>
-                <div style={{ color: 'var(--text-muted)' }}>IP Address</div>
-                <div style={{ fontWeight: 500 }}>{state?.ip || '---'}</div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'minmax(120px, auto) 1fr', gap: '1rem', marginBottom: '1.5rem', flex: 1 }}>
+                <div style={{ color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}><FaGlobe size={14} /> IP Address</div>
+                <div style={{ fontWeight: 600 }}>{state?.ip || '---'}</div>
 
-                <div style={{ color: 'var(--text-muted)' }}>WebSockets</div>
-                <div style={{ fontWeight: 500, color: 'var(--info)' }}>Port {state?.ws_port || '---'}</div>
+                <div style={{ color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}><FaProjectDiagram size={14} /> WebSockets</div>
+                <div style={{ fontWeight: 600, color: 'var(--info)' }}>Port {state?.ws_port || '---'}</div>
 
-                <div style={{ color: 'var(--text-muted)' }}>UDP Input</div>
-                <div style={{ fontWeight: 500, color: 'var(--warning)' }}>Port {state?.udp_port || '---'}</div>
+                <div style={{ color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}><FaGamepad size={14} /> UDP Input</div>
+                <div style={{ fontWeight: 600, color: 'var(--warning)' }}>Port {state?.udp_port || '---'}</div>
             </div>
 
             <div style={{ display: 'flex', gap: '0.75rem', marginTop: 'auto' }}>

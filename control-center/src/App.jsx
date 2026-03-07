@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import anime from 'animejs';
 import './App.css';
 import ServerStatus from './components/ServerStatus';
 import ConnectedDevices from './components/ConnectedDevices';
@@ -12,6 +13,18 @@ function App() {
   const [networkStats, setNetworkStats] = useState({ latency_ms: 0, packet_rate_in: 0, packet_loss_pct: 0 });
   const [logs, setLogs] = useState([]);
   const [liveGamepadData, setLiveGamepadData] = useState({});
+
+  // Intro animation
+  useEffect(() => {
+    anime({
+      targets: '.dashboard-grid > *',
+      translateY: [20, 0],
+      opacity: [0, 1],
+      duration: 800,
+      delay: anime.stagger(150),
+      easing: 'easeOutQuart'
+    });
+  }, []);
 
   // Fetch static/polling data
   useEffect(() => {

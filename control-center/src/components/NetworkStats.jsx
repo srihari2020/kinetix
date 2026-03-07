@@ -1,5 +1,5 @@
 import { FaNetworkWired } from 'react-icons/fa';
-import { AreaChart, Area, ResponsiveContainer, YAxis, Tooltip } from 'recharts';
+import { AreaChart, Area, ResponsiveContainer, YAxis, Tooltip, CartesianGrid } from 'recharts';
 import { useState, useEffect } from 'react';
 
 export default function NetworkStats({ stats }) {
@@ -44,19 +44,22 @@ export default function NetworkStats({ stats }) {
 
             <div style={{ flex: 1, width: '100%', minHeight: '60px' }}>
                 <ResponsiveContainer width="100%" height="100%">
-                    <AreaChart data={history}>
+                    <AreaChart data={history} margin={{ top: 10, right: 0, left: 0, bottom: 0 }}>
                         <defs>
                             <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
-                                <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.8} />
-                                <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
+                                <stop offset="5%" stopColor="var(--accent-color)" stopOpacity={0.6} />
+                                <stop offset="95%" stopColor="var(--accent-color)" stopOpacity={0} />
                             </linearGradient>
                         </defs>
                         <Tooltip
-                            contentStyle={{ backgroundColor: 'var(--bg-panel)', border: '1px solid var(--border-subtle)', borderRadius: '4px' }}
-                            itemStyle={{ color: '#fff' }}
+                            contentStyle={{ backgroundColor: 'var(--bg-panel)', border: '1px solid var(--border-subtle)', borderRadius: '8px', boxShadow: '0 4px 20px rgba(0,0,0,0.5)' }}
+                            itemStyle={{ color: '#fff', fontWeight: 'bold' }}
+                            labelStyle={{ color: 'var(--text-muted)', marginBottom: '4px' }}
+                            cursor={{ stroke: 'var(--border-subtle)', strokeWidth: 1, strokeDasharray: '3 3' }}
                         />
                         <YAxis hide domain={['auto', 'auto']} />
-                        <Area type="monotone" dataKey="value" stroke="#3b82f6" fillOpacity={1} fill="url(#colorValue)" strokeWidth={2} />
+                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border-subtle)" opacity={0.5} />
+                        <Area type="monotone" dataKey="value" stroke="var(--accent-color)" fillOpacity={1} fill="url(#colorValue)" strokeWidth={3} animationDuration={300} />
                     </AreaChart>
                 </ResponsiveContainer>
             </div>

@@ -19,9 +19,10 @@ export default function ConnectedDevices({ devices }) {
                 </span>
             </div>
 
-            <div style={{ overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '0.75rem', marginTop: '0.5rem' }}>
+            <div style={{ overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '0.75rem', marginTop: '0.5rem', flex: 1 }}>
                 {devices.length === 0 ? (
-                    <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)', textAlign: 'center', padding: '2rem 0' }}>
+                    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)', textAlign: 'center', padding: '2rem 1rem' }}>
+                        <FaMobileAlt size={48} style={{ opacity: 0.15, marginBottom: '1rem' }} />
                         No devices connected.<br />Enter the PC's IP in the Kinetix app.
                     </div>
                 ) : (
