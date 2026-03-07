@@ -1,73 +1,49 @@
-# 🎮 Kinetix
+# Kinetix
 
-> **Next-generation Android-to-PC Gamepad Controller**
+![Kinetix Banner](https://img.shields.io/badge/Kinetix-Ultimate%20Virtual%20Controller-ff2a5f?style=for-the-badge) ![Platform](https://img.shields.io/badge/Platform-Windows%20|%20Android-4caf50?style=for-the-badge)
 
-Kinetix transforms your Android smartphone into a professional-grade wireless game controller for your PC. Move beyond simple virtual buttons—Kinetix offers competitive latency (up to 120Hz refresh rate), real haptic feedback, customizable dynamic layouts, and physical gyroscope support for precise aiming and steering. 
+Kinetix is an ultra-low latency, highly customizable, and open-source phone-to-PC controller platform. It transforms your Android device into a professional-grade Windows gamepad over your local Wi-Fi network, providing an experience completely indistinguishable from a wired Xbox 360 controller.
 
-Whether you need an extra controller for spontaneous split-screen multiplayer, or a dedicated racing wheel utilizing the gyroscope, Kinetix is built for flexibility and performance.
+**🌍 [Visit the Kinetix Website](https://kinetix-website.vercel.app/)** *(Replace with actual Vercel URL)*
 
 ---
 
 ## ✨ Features
-- **Ultra-Low Latency:** Optimized UDP and WebSocket packet delivery allowing up to 120Hz input polling.
-- **Dynamic Layouts:** Customize, drag and drop, and resize your virtual buttons using JSON-driven controller profiles (FPS, Driving, Default, etc.).
-- **True Fullscreen Immersion:** Actionbar-free edge-to-edge Android experience for zero distractions.
-- **Advanced Feedback:** Enjoy tactile responses with real-time ripple & glow animations, and haptic vibration integration.
-- **Gyroscope Integration:** Map your phone's physical movements to analog sticks or triggers for precise steering in racing games or aiming in shooters.
-- **Glassmorphism Control Center:** A beautiful, responsive React/Electron dashboard for managing your server, tuning settings, and visualizing controller inputs in real-time.
+
+- **120Hz UDP Polling**: Built for speed. Our fast-path networking guarantees instant trigger pulls, analog stick movements, and zero-delay inputs.
+- **Native ViGEm Support**: Emulates an Xbox 360 controller via the ViGEmBus driver. 100% compatibility with Steam, Epic Games, Game Pass, and all modern titles. No mapping required!
+- **Complete Customization (Layout Designer)**: Tweak every aspect of the controller directly on your phone. Pinch to resize, drag to place, and build the perfect ergonomic layout tailored specifically to your playstyle. 
+- **Modern Control Center**: A seamless Electron-based dashboard on Windows to monitor connected devices, backend metrics, and logs in a slick Neon Glassmorphism UI.
 
 ---
 
 ## 🚀 Installation & Setup
 
-### 1. Requirements
-- A Windows PC (for Kinetix Server + Control Center)
-- An Android Phone (Android 11.0+ recommended)
-- **Dependencies:** 
-  - [ViGEmBus Driver](https://github.com/ViGEm/ViGEmBus) (Required for translating Android inputs to Windows Xbox 360 controller inputs).
-  - Node.js (for building/running the PC Control Center).
-  - Python 3.10+ (for the PC backend server).
+Kinetix is designed to be frictionless.
 
-### 2. PC Server Setup
-1. **Clone the repository:**
-   ```bash
-   git clone https://github.com/YOUR_USERNAME/Kinetix.git
-   cd Kinetix
-   ```
-2. **Install Python dependencies:**
-   ```bash
-   cd pc-server
-   pip install -r requirements.txt
-   ```
-3. **Run the Kinetix Server:**
-   ```bash
-   python server.py
-   ```
-4. **Launch the Control Center Dashboard:**
-   Open a new terminal session.
-   ```bash
-   cd control-center
-   npm install
-   npm run dev
-   ```
-   *(Or build the production version with `npm run build` and run electron directly)*
-
-### 3. Android App Setup
-1. Open the `/android-controller` directory in **Android Studio**.
-2. Sync the Gradle project and build the APK.
-3. Install the APK on your Android device.
-4. Make sure your phone and PC are on the **same Wi-Fi network**.
-5. Launch the Kinetix app on your phone. It will automatically scan the LAN for your PC Server, or you can manually enter the PC's IP address.
+1. **PC Server**: Download `KinetixSetup.exe` and install the Control Center on your Windows machine.
+2. **Android App**: Download `kinetix.apk` to your phone and install the application.
+3. **Launch Control Center**: Open the `Kinetix Control Center` on Windows. The ViGEmBus backend will automatically start and expose your local IP.
+4. **Connect Controller**: Open the Kinetix Android App, enter your PC's IP address, and tap Connect! You are now ready to play!
 
 ---
 
-## 🛠 Build Instructions
-The project is split into three main parts:
-1. `pc-server/`: Python backend utilizing `fastapi`, `websockets`, `uvicorn`, and `vgamepad`.
-2. `control-center/`: React + Vite + Electron dashboard.
-3. `android-controller/`: Native Android app written in Kotlin.
+## 📥 Download
+
+The latest stable binaries are hosted directly on our website:
+
+- [⬇️ Download for Windows](https://kinetix-website.vercel.app/downloads/KinetixSetup.exe)
+- [⬇️ Download for Android](https://kinetix-website.vercel.app/downloads/kinetix.apk)
+
+*(Note: Replace links with authentic Vercel URL once fully deployed)*
 
 ---
 
-## 📝 License
-Distributed under the MIT License. See `LICENSE` for more information.
+## 🛠 Project Structure
+
+Kinetix consists of an entire ecosystem seamlessly integrated:
+- `/website` - React/Vite landing page serving downloads and marketing.
+- `/control-center` - Electron desktop dashboard (UI built in React).
+- `/pc-server` - Python fast-path proxy managing UDP and the ViGEmBus native hooks.
+- `/android-controller` - The native Android Kotlin client sending inputs.
+- `/installer` - Unattended build script bundling the binaries into a smooth user setup.
