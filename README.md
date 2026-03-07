@@ -4,7 +4,7 @@
 
 Kinetix is an ultra-low latency, highly customizable, and open-source phone-to-PC controller platform. It transforms your Android device into a professional-grade Windows gamepad over your local Wi-Fi network, providing an experience completely indistinguishable from a wired Xbox 360 controller.
 
-**🌍 [Visit the Kinetix Website](https://kinetix-website.vercel.app/)** *(Replace with actual Vercel URL)*
+**🌍 [Visit the Kinetix Website](https://kinetix-snowy.vercel.app/)** 
 
 ---
 
@@ -32,8 +32,8 @@ Kinetix is designed to be frictionless.
 
 The latest stable binaries are hosted directly on our website:
 
-- [⬇️ Download for Windows](https://kinetix-website.vercel.app/downloads/KinetixSetup.exe)
-- [⬇️ Download for Android](https://kinetix-website.vercel.app/downloads/kinetix.apk)
+- [⬇️ Download for Windows](https://kinetix-snowy.vercel.app/downloads/KinetixSetup.exe)
+- [⬇️ Download for Android](https://kinetix-snowy.vercel.app/downloads/kinetix.apk)
 
 *(Note: Replace links with authentic Vercel URL once fully deployed)*
 
