@@ -71,70 +71,54 @@ export default function ControllerMonitor({ liveData, devices }) {
             </div>
 
             {/* Controller Visualization */}
-            <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(0,0,0,0.2)', borderRadius: 'var(--radius-lg)', position: 'relative' }}>
-                <div style={{
-                    width: '100%', maxWidth: '500px', aspectRatio: '5/3', height: 'auto',
-                    border: '2px solid var(--border-subtle)',
-                    borderRadius: '150px 150px 100px 100px',
-                    position: 'relative',
-                    backgroundColor: '#1f2937',
-                    boxShadow: 'inset 0 10px 30px rgba(0,0,0,0.5)'
-                }}>
-                    {/* Triggers (LT / RT) */}
-                    <div style={{
-                        position: 'absolute', top: '-5%', left: '16%', width: '12%', height: '6.6%',
-                        backgroundColor: '#374151', borderRadius: '4px', overflow: 'hidden'
-                    }}>
-                        <div style={{ width: '100%', height: `${(input.lt / 65535) * 100}%`, backgroundColor: 'var(--accent-color)', position: 'absolute', bottom: 0 }} />
-                    </div>
-                    <div style={{
-                        position: 'absolute', top: '-5%', right: '16%', width: '12%', height: '6.6%',
-                        backgroundColor: '#374151', borderRadius: '4px', overflow: 'hidden'
-                    }}>
-                        <div style={{ width: '100%', height: `${(input.rt / 65535) * 100}%`, backgroundColor: 'var(--accent-color)', position: 'absolute', bottom: 0 }} />
-                    </div>
+            <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(0,0,0,0.2)', borderRadius: 'var(--radius-lg)', position: 'relative', overflow: 'hidden' }}>
+                <svg viewBox="0 0 800 500" style={{ width: '100%', height: '100%', maxHeight: '400px' }}>
+                    {/* Controller Body Base */}
+                    <path d="M 150 50 L 650 50 C 750 50 800 150 800 250 C 800 450 650 450 600 350 L 500 250 L 300 250 L 200 350 C 150 450 0 450 0 250 C 0 150 50 50 150 50 Z"
+                        fill="#1f2937" stroke="var(--border-subtle)" strokeWidth="4" />
+
+                    {/* Triggers LT / RT */}
+                    <rect x="150" y="20" width="80" height="30" rx="4" fill="#374151" />
+                    <rect x="150" y={20 + 30 - ((input.lt / 65535) * 30)} width="80" height={(input.lt / 65535) * 30} rx="4" fill="var(--accent-color)" />
+
+                    <rect x="570" y="20" width="80" height="30" rx="4" fill="#374151" />
+                    <rect x="570" y={20 + 30 - ((input.rt / 65535) * 30)} width="80" height={(input.rt / 65535) * 30} rx="4" fill="var(--accent-color)" />
 
                     {/* D-PAD */}
-                    <div className={`dpad ${input.dpad > 0 ? 'active' : ''}`} style={{ position: 'absolute', bottom: '26.6%', left: '24%', width: '10%', height: '16.6%', backgroundColor: '#111', borderRadius: '5px' }}>
-                        {/* Simplified dpad visual */}
-                        <div style={{ position: 'absolute', top: 0, left: '30%', width: '40%', height: '30%', backgroundColor: [1, 5, 6].includes(input.dpad) ? 'var(--accent-color)' : '#333' }} />
-                        <div style={{ position: 'absolute', bottom: 0, left: '30%', width: '40%', height: '30%', backgroundColor: [2, 7, 8].includes(input.dpad) ? 'var(--accent-color)' : '#333' }} />
-                        <div style={{ position: 'absolute', left: '0', top: '30%', width: '30%', height: '40%', backgroundColor: [3, 5, 7].includes(input.dpad) ? 'var(--accent-color)' : '#333' }} />
-                        <div style={{ position: 'absolute', right: '0', top: '30%', width: '30%', height: '40%', backgroundColor: [4, 6, 8].includes(input.dpad) ? 'var(--accent-color)' : '#333' }} />
-                    </div>
+                    <g transform="translate(250, 280)">
+                        <rect x="-40" y="-15" width="80" height="30" fill="#111" rx="4" />
+                        <rect x="-15" y="-40" width="30" height="80" fill="#111" rx="4" />
+
+                        <rect x="-15" y="-40" width="30" height="25" fill={[1, 5, 6].includes(input.dpad) ? 'var(--accent-color)' : '#333'} rx="2" />
+                        <rect x="-15" y="15" width="30" height="25" fill={[2, 7, 8].includes(input.dpad) ? 'var(--accent-color)' : '#333'} rx="2" />
+                        <rect x="-40" y="-15" width="25" height="30" fill={[3, 5, 7].includes(input.dpad) ? 'var(--accent-color)' : '#333'} rx="2" />
+                        <rect x="15" y="-15" width="25" height="30" fill={[4, 6, 8].includes(input.dpad) ? 'var(--accent-color)' : '#333'} rx="2" />
+                    </g>
 
                     {/* Left Joystick */}
-                    <div style={{ position: 'absolute', top: '26.6%', left: '16%', width: '12%', height: '20%', backgroundColor: '#111', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                        <div style={{
-                            width: '60%', height: '60%', backgroundColor: '#4b5563', borderRadius: '50%',
-                            transform: getJoystickTransform(input.lx, input.ly),
-                            transition: 'transform 0.05s linear',
-                            boxShadow: '0 4px 6px rgba(0,0,0,0.5)'
-                        }} />
-                    </div>
+                    <g transform="translate(190, 160)">
+                        <circle cx="0" cy="0" r="50" fill="#111" />
+                        <circle cx={(input.lx / 32767) * 20} cy={-(input.ly / 32767) * 20} r="35" fill="#4b5563" style={{ transition: 'all 0.05s linear' }} />
+                    </g>
 
                     {/* Right Joystick */}
-                    <div style={{ position: 'absolute', bottom: '23.3%', right: '30%', width: '12%', height: '20%', backgroundColor: '#111', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                        <div style={{
-                            width: '60%', height: '60%', backgroundColor: '#4b5563', borderRadius: '50%',
-                            transform: getJoystickTransform(input.rx, input.ry),
-                            transition: 'transform 0.05s linear',
-                            boxShadow: '0 4px 6px rgba(0,0,0,0.5)'
-                        }} />
-                    </div>
+                    <g transform="translate(510, 280)">
+                        <circle cx="0" cy="0" r="50" fill="#111" />
+                        <circle cx={(input.rx / 32767) * 20} cy={-(input.ry / 32767) * 20} r="35" fill="#4b5563" style={{ transition: 'all 0.05s linear' }} />
+                    </g>
 
                     {/* Action Buttons */}
-                    <div style={{ position: 'absolute', top: '23.3%', right: '14%', width: '16%', height: '26.6%' }}>
+                    <g transform="translate(610, 160)">
                         {/* Y */}
-                        <div className={`action-btn ${isBtnPressed(input.buttons, 8) ? 'active' : ''}`} style={{ position: 'absolute', top: '-12.5%', left: '37.5%', width: '30%', height: '30%', borderRadius: '50%', backgroundColor: isBtnPressed(input.buttons, 8) ? '#facc15' : '#333' }} />
+                        <circle className={`action-btn ${isBtnPressed(input.buttons, 8) ? 'active' : ''}`} cx="0" cy="-45" r="20" fill={isBtnPressed(input.buttons, 8) ? '#facc15' : '#333'} />
                         {/* X */}
-                        <div className={`action-btn ${isBtnPressed(input.buttons, 4) ? 'active' : ''}`} style={{ position: 'absolute', top: '31.25%', left: '-6.25%', width: '30%', height: '30%', borderRadius: '50%', backgroundColor: isBtnPressed(input.buttons, 4) ? '#3b82f6' : '#333' }} />
+                        <circle className={`action-btn ${isBtnPressed(input.buttons, 4) ? 'active' : ''}`} cx="-45" cy="0" r="20" fill={isBtnPressed(input.buttons, 4) ? '#3b82f6' : '#333'} />
                         {/* B */}
-                        <div className={`action-btn ${isBtnPressed(input.buttons, 2) ? 'active' : ''}`} style={{ position: 'absolute', top: '31.25%', right: '-18.75%', width: '30%', height: '30%', borderRadius: '50%', backgroundColor: isBtnPressed(input.buttons, 2) ? '#ef4444' : '#333' }} />
+                        <circle className={`action-btn ${isBtnPressed(input.buttons, 2) ? 'active' : ''}`} cx="45" cy="0" r="20" fill={isBtnPressed(input.buttons, 2) ? '#ef4444' : '#333'} />
                         {/* A */}
-                        <div className={`action-btn ${isBtnPressed(input.buttons, 1) ? 'active' : ''}`} style={{ position: 'absolute', bottom: '-6.25%', left: '37.5%', width: '30%', height: '30%', borderRadius: '50%', backgroundColor: isBtnPressed(input.buttons, 1) ? '#22c55e' : '#333' }} />
-                    </div>
-                </div>
+                        <circle className={`action-btn ${isBtnPressed(input.buttons, 1) ? 'active' : ''}`} cx="0" cy="45" r="20" fill={isBtnPressed(input.buttons, 1) ? '#22c55e' : '#333'} />
+                    </g>
+                </svg>
             </div>
         </div>
     );

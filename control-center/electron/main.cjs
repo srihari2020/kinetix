@@ -4,8 +4,8 @@ const { spawn, exec } = require('child_process');
 
 function checkServer(callback) {
     exec("netstat -ano | findstr :8765", (err, stdout) => {
-        if (stdout) {
-            console.log("Server already running");
+        if (stdout && stdout.trim().length > 0) {
+            console.log("Server already running (Port 8765 is in use). Connecting to existing instance.");
             callback(true);
         } else {
             callback(false);
@@ -55,6 +55,7 @@ function createWindow() {
             contextIsolation: false,
         },
         autoHideMenuBar: true,
+        title: "Kinetix Control Center"
     });
 
     if (process.env.NODE_ENV === "development") {

@@ -91,6 +91,7 @@ class ControllerView @JvmOverloads constructor(
 
     // Touch tracking (support multi-touch)
     private val touchMap = mutableMapOf<Int, MutableSet<String>>()  // pointerId → set of pressed ids
+    private var lastTouchTime: Long = 0
 
     // ── Vibration ────────────────────────────────────────────────────
     private val vibrator = context.getSystemService(Context.VIBRATOR_SERVICE) as? Vibrator
@@ -471,6 +472,21 @@ class ControllerView @JvmOverloads constructor(
             scaleDetector.onTouchEvent(event)
             // Still process handleEditTouch if we are dragging and not zooming
             handleEditTouch(event)
+            
+            // Allow double-tap delete in edit mode
+            if (event.actionMasked == MotionEvent.ACTION_DOWN) {
+                val currentTime = System.currentTimeMillis()
+                if (currentTime - lastTouchTime < 300) {
+                    val hits = hitTest(event.x, event.y)
+                    val toRemove = hits.firstOrNull()
+                    if (toRemove != null && !toRemove.endsWith("_zone")) {
+                        buttons.removeIf { it.id == toRemove }
+                        dpadButtons.removeIf { it.id == toRemove }
+                        invalidate()
+                    }
+                }
+                lastTouchTime = currentTime
+            }
             return true
         }
 

@@ -8,6 +8,8 @@ export default function ServerStatus({ state }) {
     const handleStopServer = async () => {
         try {
             await fetch('http://127.0.0.1:8080/shutdown', { method: 'POST' });
+            // Close app via native electron ipc if available, or just dispatch event
+            setTimeout(() => window.close(), 500);
         } catch (err) {
             console.error('Failed to stop server', err);
         }
