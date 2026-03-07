@@ -145,6 +145,8 @@ class JoystickView @JvmOverloads constructor(
     }
 
     // ── Internal ─────────────────────────────────────────────────────
+    private var isAtEdge = false
+    private val vibrator by lazy { context.getSystemService(Context.VIBRATOR_SERVICE) as? android.os.Vibrator }
 
     private fun updateHat(touchX: Float, touchY: Float) {
         var dx = touchX - centerX
@@ -155,6 +157,17 @@ class JoystickView @JvmOverloads constructor(
         if (dist > maxDist) {
             dx = dx / dist * maxDist
             dy = dy / dist * maxDist
+            if (!isAtEdge) {
+                isAtEdge = true
+                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+                    vibrator?.vibrate(android.os.VibrationEffect.createOneShot(10, android.os.VibrationEffect.DEFAULT_AMPLITUDE))
+                } else {
+                    @Suppress("DEPRECATION")
+                    vibrator?.vibrate(10)
+                }
+            }
+        } else {
+            isAtEdge = false
         }
 
         hatX = centerX + dx

@@ -73,7 +73,8 @@ class ControllerView @JvmOverloads constructor(
         val pressedColor: Int,
         val textColor: Int = Color.WHITE,
         val isCircle: Boolean = false,
-        val isRound: Boolean = true
+        val isRound: Boolean = true,
+        var currentScale: Float = 1.0f
     )
 
     // ── Buttons ──────────────────────────────────────────────────────
@@ -325,6 +326,21 @@ class ControllerView @JvmOverloads constructor(
         // D-pad
         for (btn in dpadButtons) drawButton(canvas, btn)
 
+        // Animate scales
+        var animating = false
+        for (btn in buttons + dpadButtons) {
+            val targetScale = if (btn.pressed) 0.85f else 1.0f
+            if (abs(btn.currentScale - targetScale) > 0.01f) {
+                btn.currentScale += (targetScale - btn.currentScale) * 0.3f
+                animating = true
+            } else {
+                btn.currentScale = targetScale
+            }
+        }
+        if (animating) {
+            postInvalidateOnAnimation()
+        }
+
         // Triggers (analog bars)
         drawTrigger(canvas, ltRect, ltValue, "LT", ltPressed)
         drawTrigger(canvas, rtRect, rtValue, "RT", rtPressed)
@@ -343,6 +359,9 @@ class ControllerView @JvmOverloads constructor(
     }
 
     private fun drawButton(canvas: Canvas, btn: GameButton) {
+        canvas.save()
+        canvas.scale(btn.currentScale, btn.currentScale, btn.rect.centerX(), btn.rect.centerY())
+
         btnPaint.color = if (btn.pressed) btn.pressedColor else btn.color
 
         if (btn.pressed) {
@@ -388,6 +407,7 @@ class ControllerView @JvmOverloads constructor(
             textPaint.textSize = btn.rect.height() * 0.5f
             canvas.drawText(btn.label, btn.rect.centerX(), btn.rect.centerY() + textPaint.textSize * 0.33f, textPaint)
         }
+        canvas.restore()
     }
 
     private fun drawTrigger(canvas: Canvas, rect: RectF, value: Float, label: String, pressed: Boolean) {
@@ -415,8 +435,44 @@ class ControllerView @JvmOverloads constructor(
 
     // ── Touch handling ───────────────────────────────────────────────
 
+    private val scaleDetector = android.view.ScaleGestureDetector(context, object : android.view.ScaleGestureDetector.SimpleOnScaleGestureListener() {
+        override fun onScale(detector: android.view.ScaleGestureDetector): Boolean {
+            if (isEditMode && draggedButton != null) {
+                val factor = detector.scaleFactor
+                val btn = (buttons + dpadButtons).find { it.id == draggedButton }
+                if (btn != null) {
+                    val cx = btn.rect.centerX()
+                    val cy = btn.rect.centerY()
+                    val newWidth = btn.rect.width() * factor
+                    val newHeight = btn.rect.height() * factor
+                    btn.rect = RectF(cx - newWidth / 2f, cy - newHeight / 2f, cx + newWidth / 2f, cy + newHeight / 2f)
+                } else if (draggedButton == "lt_zone") {
+                    val cx = ltRect.centerX()
+                    val cy = ltRect.centerY()
+                    val newWidth = ltRect.width() * factor
+                    val newHeight = ltRect.height() * factor
+                    ltRect = RectF(cx - newWidth / 2f, cy - newHeight / 2f, cx + newWidth / 2f, cy + newHeight / 2f)
+                } else if (draggedButton == "rt_zone") {
+                    val cx = rtRect.centerX()
+                    val cy = rtRect.centerY()
+                    val newWidth = rtRect.width() * factor
+                    val newHeight = rtRect.height() * factor
+                    rtRect = RectF(cx - newWidth / 2f, cy - newHeight / 2f, cx + newWidth / 2f, cy + newHeight / 2f)
+                }
+                invalidate()
+                return true
+            }
+            return false
+        }
+    })
+
     override fun onTouchEvent(event: MotionEvent): Boolean {
-        if (isEditMode) return handleEditTouch(event)
+        if (isEditMode) {
+            scaleDetector.onTouchEvent(event)
+            // Still process handleEditTouch if we are dragging and not zooming
+            handleEditTouch(event)
+            return true
+        }
 
         when (event.actionMasked) {
             MotionEvent.ACTION_DOWN, MotionEvent.ACTION_POINTER_DOWN -> {
