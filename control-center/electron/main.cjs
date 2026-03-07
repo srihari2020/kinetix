@@ -1,20 +1,36 @@
 const { app, BrowserWindow } = require('electron');
 const path = require('path');
 const { spawn, exec } = require('child_process');
+const net = require('net');
 
 function checkServer(callback) {
-    exec("netstat -ano | findstr :8765", (err, stdout) => {
-        if (stdout && stdout.trim().length > 0) {
-            console.log("Server already running (Port 8765 is in use). Connecting to existing instance.");
-            callback(true);
-        } else {
-            callback(false);
-        }
+    const socket = new net.Socket();
+    const timeout = 1000;
+
+    socket.setTimeout(timeout);
+
+    socket.on('connect', () => {
+        console.log("Server already running (Port 8765 is in use). Connecting to existing instance.");
+        socket.destroy();
+        callback(true);
     });
+
+    socket.on('timeout', () => {
+        socket.destroy();
+        callback(false);
+    });
+
+    socket.on('error', (err) => {
+        socket.destroy();
+        callback(false);
+    });
+
+    socket.connect(8765, '127.0.0.1');
 }
 
 let mainWindow;
 let pythonProcess = null;
+let serverStartedByUs = false;
 
 const isDev = !app.isPackaged;
 
@@ -75,6 +91,7 @@ function createWindow() {
 app.whenReady().then(() => {
     checkServer((isRunning) => {
         if (!isRunning) {
+            serverStartedByUs = true;
             startPythonServer();
         }
         createWindow();
@@ -88,14 +105,14 @@ app.whenReady().then(() => {
 });
 
 app.on('before-quit', () => {
-    if (pythonProcess) {
+    if (serverStartedByUs && pythonProcess) {
         pythonProcess.kill();
     }
 });
 
 // Kill the python process when the electron app is killed
 app.on('window-all-closed', () => {
-    if (pythonProcess) {
+    if (serverStartedByUs && pythonProcess) {
         pythonProcess.kill();
     }
     if (process.platform !== 'darwin') {
