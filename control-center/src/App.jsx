@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import anime from 'animejs';
+import * as anime from 'animejs';
 import './App.css';
 import ServerStatus from './components/ServerStatus';
 import ConnectedDevices from './components/ConnectedDevices';

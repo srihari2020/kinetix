@@ -1,6 +1,6 @@
 import { FaGamepad } from 'react-icons/fa';
 import { useState, useEffect, useRef } from 'react';
-import anime from 'animejs';
+import * as anime from 'animejs';
 
 // Controller visualizer component
 export default function ControllerMonitor({ liveData, devices }) {

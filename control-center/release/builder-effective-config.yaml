@@ -11,7 +11,7 @@ files:
 asar: true
 compression: maximum
 win:
-  target: dir
+  target: portable
   icon: public/favicon.ico
 extraResources:
   - from: ../pc-server/dist/server.exe
