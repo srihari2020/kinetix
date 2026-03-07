@@ -35,28 +35,32 @@ let serverStartedByUs = false;
 const isDev = !app.isPackaged;
 
 function startPythonServer() {
-    if (isDev) {
-        const pythonPath = 'python'; // or 'python3' based on the system
-        const serverScript = path.join(__dirname, '../../pc-server/server.py');
-        console.log('Starting Python server at:', serverScript);
-        pythonProcess = spawn(pythonPath, [serverScript, '--no-tray']);
-    } else {
-        const serverExe = path.join(process.resourcesPath, 'server.exe');
-        console.log('Starting standalone Python server at:', serverExe);
-        pythonProcess = spawn(serverExe, ['--no-tray']);
+    try {
+        if (isDev) {
+            const pythonPath = 'python'; // or 'python3' based on the system
+            const serverScript = path.join(__dirname, '../../pc-server/server.py');
+            console.log('Starting Python server at:', serverScript);
+            pythonProcess = spawn(pythonPath, [serverScript, '--no-tray']);
+        } else {
+            const serverExe = path.join(process.resourcesPath, 'server.exe');
+            console.log('Starting standalone Python server at:', serverExe);
+            pythonProcess = spawn(serverExe, ['--no-tray']);
+        }
+
+        pythonProcess.stdout.on('data', (data) => {
+            console.log(`Python: ${data.toString()}`);
+        });
+
+        pythonProcess.stderr.on('data', (data) => {
+            console.error(`Python Error: ${data.toString()}`);
+        });
+
+        pythonProcess.on('close', (code) => {
+            console.log(`Python process exited with code ${code}`);
+        });
+    } catch (error) {
+        console.error("Failed to start backend server:", error);
     }
-
-    pythonProcess.stdout.on('data', (data) => {
-        console.log(`Python: ${data.toString()}`);
-    });
-
-    pythonProcess.stderr.on('data', (data) => {
-        console.error(`Python Error: ${data.toString()}`);
-    });
-
-    pythonProcess.on('close', (code) => {
-        console.log(`Python process exited with code ${code}`);
-    });
 }
 
 function createWindow() {
@@ -74,7 +78,7 @@ function createWindow() {
         title: "Kinetix Control Center"
     });
 
-    if (process.env.NODE_ENV === "development") {
+    if (isDev) {
         // Wait for the React dev server to start
         mainWindow.loadURL("http://localhost:5173");
         mainWindow.webContents.openDevTools({ mode: 'detach' });
