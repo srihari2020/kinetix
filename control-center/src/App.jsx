@@ -5,7 +5,6 @@ import ConnectedDevices from './components/ConnectedDevices';
 import ControllerMonitor from './components/ControllerMonitor';
 import NetworkStats from './components/NetworkStats';
 import LogsViewer from './components/LogsViewer';
-import { FaGamepad } from 'react-icons/fa';
 
 function App() {
   const [serverState, setServerState] = useState(null);
