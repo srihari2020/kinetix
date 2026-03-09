@@ -28,7 +28,7 @@ Name: "english"; MessagesFile: "compiler:Default.isl"
 
 [Files]
 ; The unpacked Electron application
-Source: "..\control-center\release\win-unpacked\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "..\control-center\release\Kinetix Control Center-win32-x64\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 
 ; ViGEmBus installer
 Source: "prereqs\ViGEmBus_Setup_x64.msi"; DestDir: "{tmp}"; Flags: ignoreversion deleteafterinstall; Check: ViGEmMsiExists

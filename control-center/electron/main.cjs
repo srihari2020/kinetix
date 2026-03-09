@@ -92,21 +92,35 @@ function createWindow() {
     });
 }
 
-app.whenReady().then(() => {
-    checkServer((isRunning) => {
-        if (!isRunning) {
-            serverStartedByUs = true;
-            startPythonServer();
-        }
-        createWindow();
-    });
+const gotTheLock = app.requestSingleInstanceLock()
 
-    app.on('activate', () => {
-        if (BrowserWindow.getAllWindows().length === 0) {
-            createWindow();
+if (!gotTheLock) {
+    app.quit()
+} else {
+    app.on('second-instance', (event, commandLine, workingDirectory) => {
+        // Someone tried to run a second instance, we should focus our window.
+        if (mainWindow) {
+            if (mainWindow.isMinimized()) mainWindow.restore()
+            mainWindow.focus()
         }
+    })
+
+    app.whenReady().then(() => {
+        checkServer((isRunning) => {
+            if (!isRunning) {
+                serverStartedByUs = true;
+                startPythonServer();
+            }
+            createWindow();
+        });
+
+        app.on('activate', () => {
+            if (BrowserWindow.getAllWindows().length === 0) {
+                createWindow();
+            }
+        });
     });
-});
+}
 
 app.on('before-quit', () => {
     if (serverStartedByUs && pythonProcess) {
