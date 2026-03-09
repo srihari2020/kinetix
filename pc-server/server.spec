@@ -1,12 +1,21 @@
 # -*- mode: python ; coding: utf-8 -*-
 
+from PyInstaller.utils.hooks import collect_dynamic_libs
+
+hiddenimports = [
+    "vgamepad",
+    "vgamepad.win",
+    "vgamepad.win.vigem_client"
+]
+
+binaries = collect_dynamic_libs("vgamepad")
 
 a = Analysis(
     ['server.py'],
     pathex=[],
-    binaries=[],
+    binaries=binaries,
     datas=[],
-    hiddenimports=[],
+    hiddenimports=hiddenimports,
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],

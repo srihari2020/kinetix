@@ -15,7 +15,7 @@ if not exist "venv" (
 call venv\Scripts\activate.bat
 pip install -r requirements.txt
 pip install pyinstaller
-pyinstaller --onefile --noconsole --name server server.py
+pyinstaller --clean server.spec
 copy /Y dist\server.exe ..\control-center\resources\server.exe
 call deactivate
 cd ..
@@ -28,8 +28,11 @@ echo Installing NPM dependencies...
 call npm install
 echo Building React / Electron App...
 call npm run build
-call npm run dist
-copy /Y dist\*.exe ..\installer\KinetixSetup.exe
+call npx electron-packager . "Kinetix Control Center" --platform=win32 --arch=x64 --out=release --overwrite --icon=public/favicon.ico --asar --ignore="^^/node_modules/electron|^^/release"
+copy /Y ..\pc-server\dist\server.exe "release\Kinetix Control Center-win32-x64\resources\server.exe"
+cd ..
+cd installer
+call "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" kinetix-installer.iss
 cd ..
 
 REM --- 3. Build Web Preview (Optional test) ---
