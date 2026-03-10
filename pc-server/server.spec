@@ -1,5 +1,6 @@
-# -*- mode: python ; coding: utf-8 -*-
+ # -*- mode: python ; coding: utf-8 -*-
 
+from pathlib import Path
 from PyInstaller.utils.hooks import collect_dynamic_libs
 
 hiddenimports = [
@@ -8,7 +9,14 @@ hiddenimports = [
     "vgamepad.win.vigem_client"
 ]
 
+# Base binaries collected from vgamepad
 binaries = collect_dynamic_libs("vgamepad")
+
+# Explicitly add the ViGEmClient DLL from the venv, equivalent to:
+#   --add-binary "venv/Lib/site-packages/vgamepad/win/utils/ViGEmClient.dll;vgamepad/win/utils"
+vigem_path = Path("venv/Lib/site-packages/vgamepad/win/utils/ViGEmClient.dll")
+if vigem_path.exists():
+    binaries.append((str(vigem_path), "vgamepad/win/utils"))
 
 a = Analysis(
     ['server.py'],

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import * as anime from 'animejs';
 import './App.css';
+import ConnectionOverlay from './components/ConnectionOverlay';
 import ServerStatus from './components/ServerStatus';
 import ConnectedDevices from './components/ConnectedDevices';
 import ControllerMonitor from './components/ControllerMonitor';
@@ -8,11 +9,39 @@ import NetworkStats from './components/NetworkStats';
 import LogsViewer from './components/LogsViewer';
 
 function App() {
+  const [isServerReady, setIsServerReady] = useState(false);
   const [serverState, setServerState] = useState(null);
   const [devices, setDevices] = useState([]);
   const [networkStats, setNetworkStats] = useState({ latency_ms: 0, packet_rate_in: 0, packet_loss_pct: 0 });
   const [logs, setLogs] = useState([]);
   const [liveGamepadData, setLiveGamepadData] = useState({});
+
+  // Backend readiness overlay (poll until ready)
+  useEffect(() => {
+    if (isServerReady) return;
+
+    let cancelled = false;
+    let intervalId = null;
+
+    const poll = async () => {
+      try {
+        const res = await fetch('http://localhost:8765/status', { cache: 'no-store' });
+        if (!cancelled && res.ok) {
+          setIsServerReady(true);
+          if (intervalId) clearInterval(intervalId);
+        }
+      } catch {
+        // keep polling
+      }
+    };
+
+    poll();
+    intervalId = setInterval(poll, 1000);
+    return () => {
+      cancelled = true;
+      if (intervalId) clearInterval(intervalId);
+    };
+  }, [isServerReady]);
 
   // Intro animation
   useEffect(() => {
@@ -86,7 +115,9 @@ function App() {
   }, []);
 
   return (
-    <div className="dashboard-grid">
+    <>
+      {!isServerReady && <ConnectionOverlay />}
+      <div className="dashboard-grid">
       <header className="dashboard-header">
         <div className="dashboard-title">
           <img src="/kinetix_logo.svg" alt="Kinetix Logo" width="36" height="36" style={{ filter: 'drop-shadow(0 0 8px rgba(233, 69, 96, 0.6))' }} />
@@ -110,7 +141,8 @@ function App() {
         <NetworkStats stats={networkStats} />
         <LogsViewer logs={logs} />
       </aside>
-    </div>
+      </div>
+    </>
   );
 }
 
