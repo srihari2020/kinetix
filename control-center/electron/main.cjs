@@ -79,6 +79,8 @@ function createWindow() {
     if (app.isPackaged) {
         // In production, load the built React app from local files
         mainWindow.loadFile(path.join(__dirname, "../dist/index.html"));
+        // Temporarily keep DevTools open in production to debug black-screen issues
+        mainWindow.webContents.openDevTools({ mode: 'detach' });
     } else {
         // In development, load the Vite dev server
         mainWindow.loadURL("http://localhost:5173");
