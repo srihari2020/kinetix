@@ -35,8 +35,8 @@ jobs:
           path: |
             ~/.gradle/caches
             ~/.gradle/wrapper
-          key: gradle-${{ hashFiles('android-controller/**/*.gradle*', 'android-controller/**/gradle-wrapper.properties') }}
-          restore-keys: gradle-
+          key: gradle-v2-${{ hashFiles('android-controller/**/*.gradle*', 'android-controller/**/gradle-wrapper.properties') }}
+          restore-keys: gradle-v2-
 
       - name: Make gradlew executable
         run: chmod +x android-controller/gradlew

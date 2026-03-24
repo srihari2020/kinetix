@@ -15,6 +15,8 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 
+import com.kinetix.controller.v2.ServerDiscovery
+
 /**
  * Home Screen — DroidJoy style.
  * 4 neon circular buttons: Gamepad, Customize, Connect, Settings.
@@ -249,8 +251,8 @@ class MainActivity : AppCompatActivity(), ServerDiscovery.DiscoveryListener {
     // ── Adapter ──
 
     private class ServerAdapter(
-        private val items: List<ServerDiscovery.ServerInfo>,
-        private val onClick: (ServerDiscovery.ServerInfo) -> Unit
+        private val items: List<com.kinetix.controller.v2.ServerDiscovery.ServerInfo>,
+        private val onClick: (com.kinetix.controller.v2.ServerDiscovery.ServerInfo) -> Unit
     ) : RecyclerView.Adapter<ServerAdapter.VH>() {
         class VH(view: View) : RecyclerView.ViewHolder(view) {
             val name: TextView = view.findViewById(android.R.id.text1)
