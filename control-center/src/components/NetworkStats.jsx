@@ -14,7 +14,7 @@ export default function NetworkStats({ stats }) {
     }, [stats?.packet_rate_in]);
 
     return (
-        <div className="panel" style={{ flex: 1, minHeight: '220px' }}>
+        <div className="panel" style={{ minHeight: '220px', display: 'flex', flexDirection: 'column' }}>
             <div className="panel-header">
                 <FaNetworkWired size={20} /> Network Statistics
             </div>
@@ -42,8 +42,8 @@ export default function NetworkStats({ stats }) {
                 </div>
             </div>
 
-            <div style={{ flex: 1, width: '100%', minHeight: '60px' }}>
-                <ResponsiveContainer width="100%" height="100%">
+            <div style={{ flex: 1, width: '100%', minHeight: '150px', position: 'relative' }}>
+                <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
                     <AreaChart data={history} margin={{ top: 10, right: 0, left: 0, bottom: 0 }}>
                         <defs>
                             <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">

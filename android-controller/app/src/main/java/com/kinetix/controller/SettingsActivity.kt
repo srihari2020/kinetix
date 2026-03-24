@@ -1,5 +1,6 @@
-package com.kinetix.controller
+package com.kinetix.controller.v2
 
+import com.kinetix.controller.v2.R
 import android.os.Bundle
 import android.view.View
 import android.widget.*
@@ -65,8 +66,7 @@ class SettingsActivity : AppCompatActivity() {
 
         val editLayoutBtn = findViewById<Button>(R.id.edit_layout_btn)
         editLayoutBtn?.setOnClickListener {
-            val intent = android.content.Intent(this, LayoutEditorActivity::class.java)
-            startActivity(intent)
+            Toast.makeText(this, "Long-press anywhere on the Controller screen to Edit Layout!", Toast.LENGTH_LONG).show()
         }
 
         // Back button in toolbar

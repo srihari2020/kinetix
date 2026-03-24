@@ -1,4 +1,4 @@
-package com.kinetix.controller
+package com.kinetix.controller.v2
 
 import android.content.Context
 import android.net.wifi.WifiManager

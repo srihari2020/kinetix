@@ -1,4 +1,4 @@
-package com.kinetix.controller
+package com.kinetix.controller.v2
 
 import android.content.Context
 import android.hardware.Sensor
@@ -7,18 +7,13 @@ import android.hardware.SensorEventListener
 import android.hardware.SensorManager
 import android.util.Log
 
-/**
- * Manages the gyroscope sensor for aiming. Maps phone rotation to
- * right-stick axes with configurable sensitivity and dead-zone.
- *
- * Enable via [start] / [stop]. Read current values via [gyroX] / [gyroY].
- */
 class GyroscopeManager(context: Context) : SensorEventListener {
 
     companion object {
         private const val TAG = "GyroscopeManager"
         private const val DEFAULT_SENSITIVITY = 3.0f
         private const val DEAD_ZONE = 0.02f
+        private const val ALPHA = 0.8f // Smoothing factor
     }
 
     private val sensorManager = context.getSystemService(Context.SENSOR_SERVICE) as SensorManager
@@ -28,9 +23,11 @@ class GyroscopeManager(context: Context) : SensorEventListener {
     var enabled: Boolean = false
         private set
 
-    // Output values (-1..1), thread-safe via @Volatile
     @Volatile var gyroX: Float = 0f; private set
     @Volatile var gyroY: Float = 0f; private set
+    
+    private var lastRawX = 0f
+    private var lastRawY = 0f
 
     val isAvailable: Boolean get() = gyroscope != null
 
@@ -39,9 +36,7 @@ class GyroscopeManager(context: Context) : SensorEventListener {
             Log.w(TAG, "Gyroscope not available on this device")
             return
         }
-        sensorManager.registerListener(
-            this, gyroscope, SensorManager.SENSOR_DELAY_GAME
-        )
+        sensorManager.registerListener(this, gyroscope, SensorManager.SENSOR_DELAY_GAME)
         enabled = true
         Log.i(TAG, "Gyroscope started (sensitivity=$sensitivity)")
     }
@@ -49,30 +44,30 @@ class GyroscopeManager(context: Context) : SensorEventListener {
     fun stop() {
         sensorManager.unregisterListener(this)
         enabled = false
-        gyroX = 0f
-        gyroY = 0f
+        reset()
         Log.i(TAG, "Gyroscope stopped")
     }
 
     fun reset() {
         gyroX = 0f
         gyroY = 0f
+        lastRawX = 0f
+        lastRawY = 0f
     }
-
-    // ── SensorEventListener ──────────────────────────────────────────
 
     override fun onSensorChanged(event: SensorEvent) {
         if (event.sensor.type != Sensor.TYPE_GYROSCOPE) return
 
-        // Gyroscope gives angular velocity in rad/s around X, Y, Z axes.
-        // Map Y-axis rotation → horizontal aim (gyroX)
-        // Map X-axis rotation → vertical aim (gyroY)
-        val rawX = event.values[1] * sensitivity  // yaw  → horizontal
-        val rawY = -event.values[0] * sensitivity // pitch → vertical (inverted)
+        val currentRawX = event.values[1] * sensitivity
+        val currentRawY = -event.values[0] * sensitivity
 
-        // Apply dead-zone
-        gyroX = if (kotlin.math.abs(rawX) > DEAD_ZONE) rawX.coerceIn(-1f, 1f) else 0f
-        gyroY = if (kotlin.math.abs(rawY) > DEAD_ZONE) rawY.coerceIn(-1f, 1f) else 0f
+        // Low Pass Filter
+        lastRawX = ALPHA * lastRawX + (1 - ALPHA) * currentRawX
+        lastRawY = ALPHA * lastRawY + (1 - ALPHA) * currentRawY
+
+        // Dead-zone
+        gyroX = if (kotlin.math.abs(lastRawX) > DEAD_ZONE) lastRawX.coerceIn(-1f, 1f) else 0f
+        gyroY = if (kotlin.math.abs(lastRawY) > DEAD_ZONE) lastRawY.coerceIn(-1f, 1f) else 0f
     }
 
     override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) {}

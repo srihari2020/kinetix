@@ -31,8 +31,11 @@
     },
     "extraResources": [
       {
-        "from": "../pc-server/dist/server.exe",
-        "to": "server.exe"
+        "from": "../pc-server/dist",
+        "to": "server",
+        "filter": [
+          "server.exe"
+        ]
       },
       {
         "from": "../pc-server/plugins",
@@ -44,7 +47,7 @@
     ]
   },
   "dependencies": {
-    "animejs": "^4.3.6",
+    "animejs": "^3.2.2",
     "lucide-react": "^0.577.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",

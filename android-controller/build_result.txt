@@ -1,0 +1,4 @@
+> Task :app:preBuild UP-TO-DATE
+> Task :app:preDebugBuild UP-TO-DATE
+> Task :app:dexBuilderDebug
+BUILD SUCCESSFUL in 30s

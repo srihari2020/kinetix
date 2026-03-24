@@ -1,105 +1,88 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/root_container"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#0A0A1A">
+    android:background="#05050A">
 
-    <!-- Full-screen button/trigger overlay -->
-    <com.kinetix.controller.ControllerView
-        android:id="@+id/controller_view"
-        android:layout_width="0dp"
-        android:layout_height="0dp"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent" />
+    <!-- D-Pad (left, above left joystick) -->
+    <com.kinetix.controller.v2.ui.components.DPadGroup
+        android:id="@+id/dpad_view"
+        android:layout_width="150dp"
+        android:layout_height="150dp"
+        android:layout_gravity="start|top"
+        android:layout_marginStart="30dp"
+        android:layout_marginTop="30dp" />
 
-    <!-- Left analog stick -->
-    <com.kinetix.controller.JoystickView
+    <!-- Left Joystick (bottom-left) -->
+    <com.kinetix.controller.v2.ui.components.JoystickView
         android:id="@+id/left_joystick"
-        android:layout_width="0dp"
-        android:layout_height="0dp"
-        app:layout_constraintHeight_percent="0.45"
-        app:layout_constraintDimensionRatio="H,1:1"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        android:layout_marginStart="24dp"
-        android:layout_marginBottom="24dp" />
+        android:layout_width="150dp"
+        android:layout_height="150dp"
+        android:layout_gravity="start|bottom"
+        android:layout_marginStart="50dp"
+        android:layout_marginBottom="20dp" />
 
-    <!-- Right analog stick -->
-    <com.kinetix.controller.JoystickView
+    <!-- ABXY (top-right) -->
+    <com.kinetix.controller.v2.ui.components.ABXYGroup
+        android:id="@+id/action_buttons"
+        android:layout_width="170dp"
+        android:layout_height="170dp"
+        android:layout_gravity="end|top"
+        android:layout_marginEnd="30dp"
+        android:layout_marginTop="30dp" />
+
+    <!-- Right Joystick (bottom-right) -->
+    <com.kinetix.controller.v2.ui.components.JoystickView
         android:id="@+id/right_joystick"
-        android:layout_width="0dp"
-        android:layout_height="0dp"
-        app:layout_constraintHeight_percent="0.45"
-        app:layout_constraintDimensionRatio="H,1:1"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        android:layout_marginEnd="24dp"
-        android:layout_marginBottom="24dp" />
+        android:layout_width="150dp"
+        android:layout_height="150dp"
+        android:layout_gravity="end|bottom"
+        android:layout_marginEnd="50dp"
+        android:layout_marginBottom="20dp" />
 
-    <!-- Top status bar -->
-    <LinearLayout
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:gravity="center_vertical"
-        android:paddingHorizontal="12dp"
-        android:paddingVertical="4dp"
-        android:orientation="horizontal"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent">
+    <!-- Trigger LT (top far-left) -->
+    <com.kinetix.controller.v2.ui.components.TriggerView
+        android:id="@+id/trigger_lt"
+        android:layout_width="45dp"
+        android:layout_height="110dp"
+        android:layout_gravity="top|start"
+        android:layout_marginStart="5dp"
+        android:layout_marginTop="5dp" />
 
-        <!-- Connection indicator -->
-        <TextView
-            android:id="@+id/connection_indicator"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:fontFamily="sans-serif-medium"
-            android:text="● Connecting…"
-            android:textColor="#F39C12"
-            android:textSize="12sp" />
+    <!-- Trigger RT (top far-right) -->
+    <com.kinetix.controller.v2.ui.components.TriggerView
+        android:id="@+id/trigger_rt"
+        android:layout_width="45dp"
+        android:layout_height="110dp"
+        android:layout_gravity="top|end"
+        android:layout_marginEnd="5dp"
+        android:layout_marginTop="5dp" />
 
-        <!-- Player indicator -->
-        <TextView
-            android:id="@+id/player_indicator"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginEnd="12dp"
-            android:background="#2C2C54"
-            android:paddingHorizontal="10dp"
-            android:paddingVertical="2dp"
-            android:fontFamily="sans-serif-medium"
-            android:text="P1"
-            android:textColor="#FFFFFF"
-            android:textSize="12sp"
-            android:visibility="gone" />
+    <!-- Bumper LB -->
+    <com.kinetix.controller.v2.ui.components.BumperView
+        android:id="@+id/bumper_lb"
+        android:layout_width="100dp"
+        android:layout_height="48dp"
+        android:layout_gravity="top|start"
+        android:layout_marginStart="55dp"
+        android:layout_marginTop="5dp" />
 
-        <!-- Battery indicator -->
-        <TextView
-            android:id="@+id/battery_indicator"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginEnd="8dp"
-            android:fontFamily="sans-serif-medium"
-            android:text="🔋 100%"
-            android:textColor="#2ECC71"
-            android:textSize="11sp"
-            android:visibility="gone" />
+    <!-- Bumper RB -->
+    <com.kinetix.controller.v2.ui.components.BumperView
+        android:id="@+id/bumper_rb"
+        android:layout_width="100dp"
+        android:layout_height="48dp"
+        android:layout_gravity="top|end"
+        android:layout_marginEnd="55dp"
+        android:layout_marginTop="5dp" />
 
-        <!-- Gyro toggle -->
-        <ImageButton
-            android:id="@+id/gyro_toggle"
-            android:layout_width="36dp"
-            android:layout_height="36dp"
-            android:background="?attr/selectableItemBackgroundBorderless"
-            android:src="@android:drawable/ic_menu_compass"
-            android:contentDescription="Toggle gyroscope"
-            app:tint="#E94560"
-            android:alpha="0.4" />
+    <!-- Center Buttons (Start / Select) -->
+    <com.kinetix.controller.v2.ui.components.CenterButtonsView
+        android:id="@+id/center_buttons"
+        android:layout_width="150dp"
+        android:layout_height="50dp"
+        android:layout_gravity="center_horizontal|bottom"
+        android:layout_marginBottom="8dp" />
 
-    </LinearLayout>
-
-</androidx.constraintlayout.widget.ConstraintLayout>
+</FrameLayout>

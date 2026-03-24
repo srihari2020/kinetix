@@ -1,208 +1,166 @@
 <?xml version="1.0" encoding="utf-8"?>
-<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#0A0A1A"
-    android:fillViewport="true">
+    android:background="@drawable/bg_home_gradient"
+    android:clipChildren="false">
 
-    <LinearLayout
-        android:layout_width="match_parent"
+    <!-- Title -->
+    <TextView
+        android:id="@+id/title_text"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:gravity="center_horizontal"
-        android:orientation="vertical"
-        android:padding="32dp">
+        android:text="KINETIX"
+        android:textColor="#FFFFFF"
+        android:textSize="42sp"
+        android:textStyle="bold"
+        android:letterSpacing="0.2"
+        android:shadowColor="#E94560"
+        android:shadowDx="0"
+        android:shadowDy="0"
+        android:shadowRadius="25"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_marginTop="48dp" />
 
-        <!-- Header row: title + settings -->
-        <RelativeLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="8dp">
+    <TextView
+        android:id="@+id/subtitle_text"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="PRO CONTROLLER"
+        android:textColor="#8888AA"
+        android:textSize="14sp"
+        android:letterSpacing="0.4"
+        app:layout_constraintTop_toBottomOf="@id/title_text"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_marginTop="4dp" />
 
-            <LinearLayout
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_centerInParent="true"
-                android:orientation="vertical"
-                android:gravity="center">
+    <!-- 4 Circular Buttons Grid -->
+    <GridLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:columnCount="2"
+        android:rowCount="2"
+        app:layout_constraintTop_toBottomOf="@id/subtitle_text"
+        app:layout_constraintBottom_toTopOf="@id/status_text"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:clipChildren="false">
 
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="🎮"
-                    android:textSize="48sp" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:fontFamily="sans-serif-medium"
-                    android:text="KINETIX"
-                    android:textColor="#E94560"
-                    android:textSize="32sp"
-                    android:textStyle="bold"
-                    android:letterSpacing="0.2" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:fontFamily="sans-serif-light"
-                    android:text="Wireless Game Controller"
-                    android:textColor="#7A7A9E"
-                    android:textSize="13sp" />
-            </LinearLayout>
-
-            <ImageButton
-                android:id="@+id/settings_btn"
-                android:layout_width="48dp"
-                android:layout_height="48dp"
-                android:layout_alignParentEnd="true"
-                android:layout_centerVertical="true"
-                android:background="?attr/selectableItemBackgroundBorderless"
-                android:src="@android:drawable/ic_menu_manage"
-                android:contentDescription="Settings"
-                android:tint="#7A7A9E" />
-        </RelativeLayout>
-
-        <!-- Profile selector -->
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:layout_marginBottom="16dp"
-            android:orientation="horizontal"
-            android:gravity="center_vertical">
-
+        <!-- Gamepad -->
+        <FrameLayout
+            android:id="@+id/btn_gamepad"
+            android:layout_width="140dp"
+            android:layout_height="140dp"
+            android:layout_margin="16dp"
+            android:clipChildren="false">
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:background="@drawable/bg_neon_circle"
+                android:backgroundTint="#DE2ECC71"/>
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Profile:"
-                android:textColor="#7A7A9E"
-                android:textSize="13sp"
-                android:layout_marginEnd="8dp" />
-
-            <Spinner
-                android:id="@+id/profile_spinner"
-                android:layout_width="0dp"
-                android:layout_height="40dp"
-                android:layout_weight="1"
-                android:background="@android:drawable/btn_dropdown"
-                android:popupBackground="#1A1A2E" />
-        </LinearLayout>
-
-        <!-- Scan status -->
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:gravity="center_vertical"
-            android:layout_marginBottom="8dp">
-
-            <ProgressBar
-                android:id="@+id/scan_progress"
-                style="?android:attr/progressBarStyleSmall"
-                android:layout_width="20dp"
-                android:layout_height="20dp"
-                android:layout_marginEnd="8dp"
-                android:visibility="gone" />
-
-            <TextView
-                android:id="@+id/scan_status"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:fontFamily="sans-serif-medium"
-                android:text="Scanning for servers…"
-                android:textColor="#7A7A9E"
-                android:textSize="13sp" />
-        </LinearLayout>
-
-        <!-- Server list -->
-        <androidx.recyclerview.widget.RecyclerView
-            android:id="@+id/server_list"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="16dp"
-            android:background="#12122A"
-            android:padding="4dp"
-            android:nestedScrollingEnabled="false" />
-
-        <!-- Manual entry toggle -->
-        <TextView
-            android:id="@+id/manual_toggle"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="8dp"
-            android:fontFamily="sans-serif-medium"
-            android:text="▸ Enter IP manually"
-            android:textColor="#E94560"
-            android:textSize="13sp"
-            android:clickable="true"
-            android:focusable="true" />
-
-        <!-- Manual IP section -->
-        <LinearLayout
-            android:id="@+id/manual_section"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:visibility="gone">
-
-            <com.google.android.material.textfield.TextInputLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginBottom="12dp"
-                android:hint="Server IP Address"
-                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
-
-                <com.google.android.material.textfield.TextInputEditText
-                    android:id="@+id/ip_input"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:inputType="text"
-                    android:textColor="#FFFFFF"
-                    android:textColorHint="#5A5A7E"
-                    android:fontFamily="monospace"
-                    android:textSize="16sp" />
-            </com.google.android.material.textfield.TextInputLayout>
-
-            <com.google.android.material.textfield.TextInputLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginBottom="16dp"
-                android:hint="Port"
-                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
-
-                <com.google.android.material.textfield.TextInputEditText
-                    android:id="@+id/port_input"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:inputType="number"
-                    android:text="8765"
-                    android:textColor="#FFFFFF"
-                    android:textColorHint="#5A5A7E"
-                    android:fontFamily="monospace"
-                    android:textSize="16sp" />
-            </com.google.android.material.textfield.TextInputLayout>
-
-            <Button
-                android:id="@+id/connect_btn"
-                android:layout_width="match_parent"
-                android:layout_height="52dp"
-                android:backgroundTint="#E94560"
-                android:fontFamily="sans-serif-medium"
-                android:text="CONNECT"
+                android:layout_gravity="center"
+                android:text="🎮\nGamepad"
+                android:gravity="center"
                 android:textColor="#FFFFFF"
-                android:textSize="15sp"
-                android:letterSpacing="0.1" />
-        </LinearLayout>
+                android:textSize="16sp"
+                android:textStyle="bold" />
+        </FrameLayout>
 
-        <!-- Status -->
-        <TextView
-            android:id="@+id/status_text"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
-            android:fontFamily="sans-serif-light"
-            android:text="Tap a server above to connect"
-            android:textColor="#5A5A7E"
-            android:textSize="12sp" />
+        <!-- Customize -->
+        <FrameLayout
+            android:id="@+id/btn_customize"
+            android:layout_width="140dp"
+            android:layout_height="140dp"
+            android:layout_margin="16dp"
+            android:clipChildren="false">
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:background="@drawable/bg_neon_circle"
+                android:backgroundTint="#DEE94560"/>
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:text="✏️\nCustomize"
+                android:gravity="center"
+                android:textColor="#FFFFFF"
+                android:textSize="16sp"
+                android:textStyle="bold" />
+        </FrameLayout>
 
-    </LinearLayout>
-</ScrollView>
+        <!-- Connect -->
+        <FrameLayout
+            android:id="@+id/btn_connect"
+            android:layout_width="140dp"
+            android:layout_height="140dp"
+            android:layout_margin="16dp"
+            android:clipChildren="false">
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:background="@drawable/bg_neon_circle"
+                android:backgroundTint="#DE3498DB"/>
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:text="🔌\nConnect"
+                android:gravity="center"
+                android:textColor="#FFFFFF"
+                android:textSize="16sp"
+                android:textStyle="bold" />
+        </FrameLayout>
+
+        <!-- Settings -->
+        <FrameLayout
+            android:id="@+id/btn_settings"
+            android:layout_width="140dp"
+            android:layout_height="140dp"
+            android:layout_margin="16dp"
+            android:clipChildren="false">
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:background="@drawable/bg_neon_circle"
+                android:backgroundTint="#DE9B59B6"/>
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:text="⚙️\nSettings"
+                android:gravity="center"
+                android:textColor="#FFFFFF"
+                android:textSize="16sp"
+                android:textStyle="bold" />
+        </FrameLayout>
+    </GridLayout>
+
+    <!-- Status line -->
+    <TextView
+        android:id="@+id/status_text"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Tap Gamepad to play • Customize to edit layout"
+        android:textColor="#5A5A7E"
+        android:textSize="12sp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_marginBottom="24dp" />
+
+    <!-- Connect Overlay (hidden by default) -->
+    <include layout="@layout/view_connect_overlay"
+        android:id="@+id/connect_overlay"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:visibility="gone" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>

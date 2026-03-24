@@ -1,6 +1,6 @@
 import { FaGamepad } from 'react-icons/fa';
 import { useState, useEffect, useRef } from 'react';
-import * as anime from 'animejs';
+import anime from 'animejs/lib/anime.js';
 
 // Controller visualizer component
 export default function ControllerMonitor({ liveData, devices }) {
@@ -71,11 +71,11 @@ export default function ControllerMonitor({ liveData, devices }) {
             </div>
 
             {/* Controller Visualization */}
-            <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(0,0,0,0.2)', borderRadius: 'var(--radius-lg)', position: 'relative', overflow: 'hidden' }}>
-                <svg viewBox="0 0 800 500" style={{ width: '100%', height: '100%', maxHeight: '400px' }}>
+            <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(0,0,0,0.1)', borderRadius: 'var(--radius-lg)', position: 'relative', overflow: 'hidden', minHeight: '300px' }}>
+                <svg viewBox="0 0 800 500" style={{ width: '100%', height: '100%', maxWidth: '600px' }}>
                     {/* Controller Body Base */}
                     <path d="M 150 50 L 650 50 C 750 50 800 150 800 250 C 800 450 650 450 600 350 L 500 250 L 300 250 L 200 350 C 150 450 0 450 0 250 C 0 150 50 50 150 50 Z"
-                        fill="#1f2937" stroke="var(--border-subtle)" strokeWidth="4" />
+                        fill="#2a3441" stroke="var(--border-subtle)" strokeWidth="4" />
 
                     {/* Triggers LT / RT */}
                     <rect x="150" y="20" width="80" height="30" rx="4" fill="#374151" />

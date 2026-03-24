@@ -1,0 +1,4 @@
+> Task :app:preBuild UP-TO-DATE
+> Task :app:preDebugBuild UP-TO-DATE
+w: file:///C:/Projects/Kinetix/android-controller/app/src/main/java/com/kinetix/controller/system/HapticsManager.kt:9:72 'VIBRATOR_SERVICE: String' is deprecated. Deprecated in Java
+BUILD SUCCESSFUL in 15s

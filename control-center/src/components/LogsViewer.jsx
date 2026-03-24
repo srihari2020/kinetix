@@ -12,7 +12,7 @@ export default function LogsViewer({ logs }) {
     }, [logs]);
 
     return (
-        <div className="panel" style={{ flex: '1.5', minHeight: 0, display: 'flex', flexDirection: 'column' }}>
+        <div className="panel" style={{ flex: 1, minHeight: '200px', display: 'flex', flexDirection: 'column' }}>
             <div className="panel-header">
                 <FaTerminal size={20} /> Server Logs
             </div>

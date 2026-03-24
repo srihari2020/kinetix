@@ -40,7 +40,7 @@ function startServer() {
             console.log('Starting Python server at:', serverScript);
             serverProcess = spawn(pythonPath, [serverScript, '--no-tray']);
         } else {
-            const serverExe = path.join(process.resourcesPath, 'server.exe');
+            const serverExe = path.join(process.resourcesPath, 'server', 'server.exe');
             console.log('Starting standalone Python server at:', serverExe);
             serverProcess = spawn(serverExe, ['--no-tray']);
         }
@@ -65,7 +65,7 @@ function createWindow() {
     mainWindow = new BrowserWindow({
         width: 1200,
         height: 800,
-        minWidth: 1000,
+        minWidth: 900,
         minHeight: 600,
         backgroundColor: '#0f1115',
         webPreferences: {
@@ -78,17 +78,24 @@ function createWindow() {
 
     if (app.isPackaged) {
         // In production, load the built React app from local files
-        mainWindow.loadFile(path.join(__dirname, "../dist/index.html"));
-        // Temporarily keep DevTools open in production to debug black-screen issues
-        mainWindow.webContents.openDevTools({ mode: 'detach' });
+        const indexPath = path.join(__dirname, '../dist/index.html');
+        console.log('Loading production build from:', indexPath);
+        mainWindow.loadFile(indexPath);
     } else {
         // In development, load the Vite dev server
         mainWindow.loadURL("http://localhost:5173");
-        mainWindow.webContents.openDevTools({ mode: 'detach' });
     }
 
     mainWindow.on('closed', () => {
         mainWindow = null;
+    });
+
+    mainWindow.webContents.on('crashed', () => {
+        console.error('Renderer process crashed');
+    });
+
+    mainWindow.on('unresponsive', () => {
+        console.error('Window became unresponsive');
     });
 }
 

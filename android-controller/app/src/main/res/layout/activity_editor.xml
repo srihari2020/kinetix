@@ -1,0 +1,152 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/editor_root"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#0A0A12">
+
+    <!-- Grid background drawn by EditorGridView -->
+    <com.kinetix.controller.v2.ui.components.EditorGridView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" />
+
+    <!-- D-Pad -->
+    <com.kinetix.controller.v2.ui.components.DPadGroup
+        android:id="@+id/editor_dpad"
+        android:layout_width="150dp"
+        android:layout_height="150dp"
+        android:layout_gravity="start|top"
+        android:layout_marginStart="30dp"
+        android:layout_marginTop="30dp" />
+
+    <!-- Left Joystick -->
+    <com.kinetix.controller.v2.ui.components.JoystickView
+        android:id="@+id/editor_left_joystick"
+        android:layout_width="150dp"
+        android:layout_height="150dp"
+        android:layout_gravity="start|bottom"
+        android:layout_marginStart="50dp"
+        android:layout_marginBottom="20dp" />
+
+    <!-- ABXY -->
+    <com.kinetix.controller.v2.ui.components.ABXYGroup
+        android:id="@+id/editor_action_buttons"
+        android:layout_width="170dp"
+        android:layout_height="170dp"
+        android:layout_gravity="end|top"
+        android:layout_marginEnd="30dp"
+        android:layout_marginTop="30dp" />
+
+    <!-- Right Joystick -->
+    <com.kinetix.controller.v2.ui.components.JoystickView
+        android:id="@+id/editor_right_joystick"
+        android:layout_width="150dp"
+        android:layout_height="150dp"
+        android:layout_gravity="end|bottom"
+        android:layout_marginEnd="50dp"
+        android:layout_marginBottom="20dp" />
+
+    <!-- LT -->
+    <com.kinetix.controller.v2.ui.components.TriggerView
+        android:id="@+id/editor_lt"
+        android:layout_width="45dp"
+        android:layout_height="110dp"
+        android:layout_gravity="top|start"
+        android:layout_marginStart="5dp"
+        android:layout_marginTop="70dp" />
+
+    <!-- RT -->
+    <com.kinetix.controller.v2.ui.components.TriggerView
+        android:id="@+id/editor_rt"
+        android:layout_width="45dp"
+        android:layout_height="110dp"
+        android:layout_gravity="top|end"
+        android:layout_marginEnd="5dp"
+        android:layout_marginTop="70dp" />
+
+    <!-- LB -->
+    <com.kinetix.controller.v2.ui.components.BumperView
+        android:id="@+id/editor_lb"
+        android:layout_width="100dp"
+        android:layout_height="48dp"
+        android:layout_gravity="top|start"
+        android:layout_marginStart="55dp"
+        android:layout_marginTop="70dp" />
+
+    <!-- RB -->
+    <com.kinetix.controller.v2.ui.components.BumperView
+        android:id="@+id/editor_rb"
+        android:layout_width="100dp"
+        android:layout_height="48dp"
+        android:layout_gravity="top|end"
+        android:layout_marginEnd="55dp"
+        android:layout_marginTop="70dp" />
+
+    <!-- Center Buttons -->
+    <com.kinetix.controller.v2.ui.components.CenterButtonsView
+        android:id="@+id/editor_center"
+        android:layout_width="150dp"
+        android:layout_height="50dp"
+        android:layout_gravity="center_horizontal|bottom"
+        android:layout_marginBottom="8dp" />
+
+    <!-- Top toolbar (Save / Reset / Title / Add) -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="top"
+        android:background="#CC101020"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:padding="10dp"
+        android:elevation="8dp">
+
+        <Button
+            android:id="@+id/btn_reset"
+            android:layout_width="wrap_content"
+            android:layout_height="42dp"
+            android:text="RESET"
+            android:backgroundTint="#3A3A5E"
+            android:textColor="#FFF"
+            android:textSize="12sp" />
+
+        <Button
+            android:id="@+id/btn_add"
+            android:layout_width="wrap_content"
+            android:layout_height="42dp"
+            android:layout_marginStart="8dp"
+            android:text="＋ ADD"
+            android:backgroundTint="#00BCD4"
+            android:textColor="#FFF"
+            android:textSize="12sp" />
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="LAYOUT EDITOR"
+            android:textColor="#E94560"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            android:letterSpacing="0.15"
+            android:gravity="center" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Long-press to remove"
+            android:textColor="#666"
+            android:textSize="10sp"
+            android:layout_marginEnd="8dp" />
+
+        <Button
+            android:id="@+id/btn_save"
+            android:layout_width="wrap_content"
+            android:layout_height="42dp"
+            android:text="SAVE"
+            android:backgroundTint="#2ECC71"
+            android:textColor="#FFF"
+            android:textSize="12sp" />
+    </LinearLayout>
+
+</FrameLayout>

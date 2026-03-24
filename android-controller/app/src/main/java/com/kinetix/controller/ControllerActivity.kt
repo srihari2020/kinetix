@@ -1,238 +1,198 @@
-package com.kinetix.controller
+package com.kinetix.controller.v2
 
-import android.content.Intent
+import android.content.Context
 import android.os.Build
 import android.os.Bundle
-import android.os.Handler
-import android.os.Looper
-import android.os.VibrationEffect
-import android.os.Vibrator
-import android.view.View
-import android.view.WindowInsets
-import android.view.WindowInsetsController
-import android.widget.ImageButton
-import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.lifecycleScope
+import com.kinetix.controller.v2.system.HapticsManager
+import com.kinetix.controller.v2.system.InputSender
+import com.kinetix.controller.v2.ui.components.ABXYGroup
+import com.kinetix.controller.v2.ui.components.BumperView
+import com.kinetix.controller.v2.ui.components.CenterButtonsView
+import com.kinetix.controller.v2.ui.components.DPadGroup
+import com.kinetix.controller.v2.ui.components.JoystickView
+import com.kinetix.controller.v2.ui.components.TriggerView
+import android.view.View
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
+import kotlinx.coroutines.launch
 import org.json.JSONObject
 import java.util.UUID
-import com.google.gson.Gson
 
 /**
- * Full-screen landscape controller screen with hybrid networking.
- *
- * Uses UDP for 120 Hz input and WebSocket for control messages
- * (registration, rumble events, settings).
+ * Controller Screen — FIXED UI. No edit mode. No dragging. No resizing.
+ * Loads saved layout offsets from JSON and applies them on start.
  */
 class ControllerActivity : AppCompatActivity(), WebSocketClient.ConnectionListener {
 
-    // ── Networking ───────────────────────────────────────────────────
-    private lateinit var wsClient: WebSocketClient
+    private lateinit var haptics: HapticsManager
+    private lateinit var inputSender: InputSender
+    private lateinit var gyroManager: GyroscopeManager
+
+    private var wsClient: WebSocketClient? = null
     private var udpSender: UdpInputSender? = null
     private var webRtcClient: WebRtcClient? = null
-    private var playerIndex: Int = 0
-
-    // ── UI ───────────────────────────────────────────────────────────
-    private lateinit var leftJoystick: JoystickView
-    private lateinit var rightJoystick: JoystickView
-    private lateinit var controllerView: ControllerView
-    private lateinit var connectionIndicator: TextView
-    private lateinit var playerIndicator: TextView
-    private lateinit var batteryIndicator: TextView
-    private lateinit var gyroToggle: ImageButton
-
-    // ── Gyroscope ────────────────────────────────────────────────────
-    private lateinit var gyroManager: GyroscopeManager
-    private var gyroEnabled = false
-
-    // ── Profile ──────────────────────────────────────────────────────
-    private lateinit var profile: ControllerProfile
-
-    // ── Input state ──────────────────────────────────────────────────
-    private var lx = 0f; private var ly = 0f
-    private var rx = 0f; private var ry = 0f
-    private var buttonState = ControllerView.ButtonState()
-
-    // ── Send loop ────────────────────────────────────────────────────
-    private val handler = Handler(Looper.getMainLooper())
-    private val sendRunnable = object : Runnable {
-        override fun run() {
-            sendState()
-            handler.postDelayed(this, sendIntervalMs)
-        }
-    }
-    private var sendIntervalMs = 8L  // ~120 Hz
-
-    // ── Vibration ────────────────────────────────────────────────────
-    private val vibrator by lazy { getSystemService(VIBRATOR_SERVICE) as? Vibrator }
-
-    // ── Connection info ──────────────────────────────────────────────
-    private var serverIp = ""
+    private var serverIp = "192.168.1.100"
     private var wsPort = 8765
     private var udpPort = 5743
-    private val deviceId by lazy {
-        val prefs = getSharedPreferences("kinetix", MODE_PRIVATE)
-        prefs.getString("device_id", null) ?: UUID.randomUUID().toString().also {
-            prefs.edit().putString("device_id", it).apply()
-        }
-    }
+    private var playerIndex = 0
 
-    // ── Lifecycle ────────────────────────────────────────────────────
+    private lateinit var leftJoystick: JoystickView
+    private lateinit var rightJoystick: JoystickView
+    private lateinit var dpadGroup: DPadGroup
+    private lateinit var actionButtons: ABXYGroup
+    private lateinit var triggerLT: TriggerView
+    private lateinit var triggerRT: TriggerView
+    private lateinit var bumperLB: BumperView
+    private lateinit var bumperRB: BumperView
+    private lateinit var centerBtns: CenterButtonsView
+
+    private var inputLoopJob: Job? = null
+    private var currentState = ControllerState()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_controller)
         goImmersive()
 
-        // Extract intent extras
         serverIp = intent.getStringExtra("server_ip") ?: "192.168.1.100"
         wsPort = intent.getIntExtra("ws_port", 8765)
         udpPort = intent.getIntExtra("udp_port", 5743)
 
-        // Load profile
-        val profileName = intent.getStringExtra("profile_name") ?: "Default"
-        val profiles = ControllerProfile.loadAll(this)
-        profile = profiles.find { it.name == profileName } ?: ControllerProfile.getActive(this)
+        haptics = HapticsManager(this)
+        gyroManager = GyroscopeManager(this)
 
-        // Configure send rate
-        sendIntervalMs = (1000L / profile.sendRateHz).coerceAtLeast(8L)
+        val profile = ControllerProfile.getActive(this)
+        haptics.enabled = profile.vibrationEnabled
+        haptics.intensityMultipler = profile.vibrationIntensity
+        if (profile.gyroEnabled && gyroManager.isAvailable) {
+            gyroManager.sensitivity = profile.gyroSensitivity
+            gyroManager.start()
+        }
 
-        // Bind views
+        // ── Bind Views ──
         leftJoystick = findViewById(R.id.left_joystick)
         rightJoystick = findViewById(R.id.right_joystick)
-        controllerView = findViewById(R.id.controller_view)
-        connectionIndicator = findViewById(R.id.connection_indicator)
-        playerIndicator = findViewById(R.id.player_indicator)
-        batteryIndicator = findViewById(R.id.battery_indicator)
-        gyroToggle = findViewById(R.id.gyro_toggle)
+        dpadGroup = findViewById(R.id.dpad_view)
+        actionButtons = findViewById(R.id.action_buttons)
+        triggerLT = findViewById(R.id.trigger_lt)
+        triggerRT = findViewById(R.id.trigger_rt)
+        bumperLB = findViewById(R.id.bumper_lb)
+        bumperRB = findViewById(R.id.bumper_rb)
+        centerBtns = findViewById(R.id.center_buttons)
 
-        // Wire joysticks
-        leftJoystick.onPositionChanged = { x, y -> lx = x; ly = y }
-        rightJoystick.onPositionChanged = { x, y -> rx = x; ry = y }
-        
-        if (profile.layoutJson.isNotEmpty()) {
-            controllerView.customLayoutJson = profile.layoutJson
-            controllerView.post {
-                try {
-                    val root = JSONObject(profile.layoutJson)
-                    val sticks = root.optJSONArray("sticks")
-                    if (sticks != null) {
-                        for (i in 0 until sticks.length()) {
-                            val obj = sticks.getJSONObject(i)
-                            val id = obj.optString("id")
-                            val cx = obj.optDouble("x").toFloat()
-                            val cy = obj.optDouble("y").toFloat()
-                            
-                            val parent = leftJoystick.parent as View
-                            if (id == "left") {
-                                leftJoystick.x = cx * parent.width - leftJoystick.width / 2f
-                                leftJoystick.y = cy * parent.height - leftJoystick.height / 2f
-                            } else if (id == "right") {
-                                rightJoystick.x = cx * parent.width - rightJoystick.width / 2f
-                                rightJoystick.y = cy * parent.height - rightJoystick.height / 2f
-                            }
-                        }
+        bumperLB.label = "LB"
+        bumperRB.label = "RB"
+
+        // ── Pass Haptics ──
+        leftJoystick.haptics = haptics
+        rightJoystick.haptics = haptics
+        dpadGroup.haptics = haptics
+        actionButtons.haptics = haptics
+        triggerLT.haptics = haptics
+        triggerRT.haptics = haptics
+        bumperLB.haptics = haptics
+        bumperRB.haptics = haptics
+        centerBtns.haptics = haptics
+
+        // ── State Listeners ──
+        leftJoystick.onPositionChanged = { x, y -> currentState.lx = x; currentState.ly = y }
+        rightJoystick.onPositionChanged = { x, y ->
+            if (!gyroManager.enabled) { currentState.rx = x; currentState.ry = y }
+        }
+        triggerLT.onValueChanged = { v -> currentState.lt = v }
+        triggerRT.onValueChanged = { v -> currentState.rt = v }
+        bumperLB.onStateChanged = { p -> currentState.lb = p }
+        bumperRB.onStateChanged = { p -> currentState.rb = p }
+        centerBtns.onStateChanged = { start, select -> currentState.start = start; currentState.select = select }
+        dpadGroup.onDpadChanged = { dir -> currentState.dpad = dir }
+        actionButtons.onStateChanged = { st ->
+            currentState.a = st.a; currentState.b = st.b
+            currentState.x = st.x; currentState.y = st.y
+        }
+
+        // ── Load saved layout offsets ──
+        loadLayoutOffsets()
+
+        // ── Start networking ──
+        lifecycleScope.launch(Dispatchers.IO) { connectNetwork() }
+    }
+
+    // ── Load offsets saved by EditorActivity ──
+
+    private fun loadLayoutOffsets() {
+        val root = findViewById<View>(R.id.root_container)
+        root.post {
+            val prefs = getSharedPreferences("kinetix_layout", Context.MODE_PRIVATE)
+            val jsonStr = prefs.getString("layout_offsets_v3", null) ?: return@post
+            try {
+                val json = JSONObject(jsonStr)
+                val w = root.width.toFloat()
+                val h = root.height.toFloat()
+                if (w == 0f || h == 0f) return@post
+
+                val views = mapOf(
+                    "left" to leftJoystick, "right" to rightJoystick,
+                    "dpad" to dpadGroup as View, "abxy" to actionButtons as View,
+                    "lt" to triggerLT as View, "rt" to triggerRT as View,
+                    "lb" to bumperLB as View, "rb" to bumperRB as View,
+                    "center" to centerBtns as View
+                )
+                views.forEach { (id, v) ->
+                    val obj = json.optJSONObject(id)
+                    if (obj != null) {
+                        v.translationX = obj.getDouble("tx").toFloat() * w
+                        v.translationY = obj.getDouble("ty").toFloat() * h
+                        v.scaleX = obj.getDouble("scaleX").toFloat()
+                        v.scaleY = obj.getDouble("scaleY").toFloat()
+                        // Respect editor visibility — hide removed components
+                        val visible = obj.optBoolean("visible", true)
+                        v.visibility = if (visible) View.VISIBLE else View.GONE
                     }
-                } catch (e: Exception) {}
+                }
+            } catch (_: Exception) {}
+        }
+    }
+
+    // ── 120Hz Input Loop ──
+
+    private fun startInputLoop() {
+        inputLoopJob?.cancel()
+        inputLoopJob = lifecycleScope.launch(Dispatchers.Default) {
+            while (isActive) {
+                if (gyroManager.enabled) {
+                    currentState.rx = gyroManager.gyroX
+                    currentState.ry = gyroManager.gyroY
+                }
+                sendState()
+                delay(8) // ~120Hz
             }
         }
-
-        // Wire buttons
-        controllerView.onStateChanged = { state -> buttonState = state }
-
-        // Gyroscope
-        gyroManager = GyroscopeManager(this)
-        gyroEnabled = profile.gyroEnabled
-        gyroManager.sensitivity = profile.gyroSensitivity
-        updateGyroButton()
-
-        gyroToggle.setOnClickListener {
-            gyroEnabled = !gyroEnabled
-            updateGyroButton()
-            if (gyroEnabled) gyroManager.start() else gyroManager.stop()
-            Toast.makeText(this, if (gyroEnabled) "Gyro ON" else "Gyro OFF", Toast.LENGTH_SHORT).show()
-        }
-
-        // Hide gyro button if not available
-        if (!gyroManager.isAvailable) {
-            gyroToggle.visibility = View.GONE
-        }
-
-        // Battery indicator
-        updateBattery()
-
-        // Connect WebSocket (control channel)
-        val wsUrl = "ws://$serverIp:$wsPort"
-        wsClient = WebSocketClient(wsUrl, this)
-        wsClient.onMessage = { msg -> handleServerMessage(msg) }
-        
-        webRtcClient = WebRtcClient(this) { sdpJson ->
-            wsClient.sendRaw(sdpJson)
-        }
-        
-        wsClient.connect()
     }
-
-    override fun onResume() {
-        super.onResume()
-        handler.post(sendRunnable)
-        if (gyroEnabled) gyroManager.start()
-        goImmersive()
-    }
-
-    override fun onPause() {
-        super.onPause()
-        handler.removeCallbacks(sendRunnable)
-        gyroManager.stop()
-    }
-
-    override fun onDestroy() {
-        super.onDestroy()
-        handler.removeCallbacks(sendRunnable)
-        udpSender?.stop()
-        webRtcClient?.close()
-        wsClient.disconnect()
-    }
-
-    // ── Send state ───────────────────────────────────────────────────
 
     private fun sendState() {
-        // Combine stick + gyro
-        var finalRx = rx
-        var finalRy = ry
-        if (gyroEnabled && gyroManager.enabled) {
-            finalRx = (rx + gyroManager.gyroX).coerceIn(-1f, 1f)
-            finalRy = (ry + gyroManager.gyroY).coerceIn(-1f, 1f)
+        if (!this::inputSender.isInitialized) {
+            inputSender = InputSender(udpSender, wsClient, webRtcClient)
         }
-
-        val state = ControllerState(
-            lx = lx, ly = ly,
-            rx = finalRx, ry = finalRy,
-            a = buttonState.a, b = buttonState.b,
-            x = buttonState.x, y = buttonState.y,
-            lb = buttonState.lb, rb = buttonState.rb,
-            lt = buttonState.lt, rt = buttonState.rt,
-            start = buttonState.start, select = buttonState.select,
-            dpad = buttonState.dpad
-        )
-
-        // Primary: UDP (fast path)
-        udpSender?.let { 
-            it.currentState = state 
-            if (webRtcClient?.isConnected == true) {
-                // Send same binary block over WebRTC
-                val packet = it.packState(state)
-                webRtcClient?.send(packet)
-            }
-        }
-
-        // Fallback: WebSocket JSON (if UDP not yet started)
-        if (udpSender == null && wsClient.isConnected) {
-            wsClient.sendState(state)
-        }
+        inputSender.send(currentState)
     }
 
-    // ── Server messages ──────────────────────────────────────────────
+    // ── Networking ──
+
+    private fun connectNetwork() {
+        try {
+            val wsUrl = "ws://$serverIp:$wsPort"
+            val client = WebSocketClient(wsUrl, this)
+            client.onMessage = { msg -> handleServerMessage(msg) }
+            wsClient = client
+            webRtcClient = WebRtcClient(this) { sdpJson -> wsClient?.sendRaw(sdpJson) }
+            wsClient?.connect()
+        } catch (_: Exception) {}
+    }
 
     private fun handleServerMessage(message: String) {
         try {
@@ -240,146 +200,76 @@ class ControllerActivity : AppCompatActivity(), WebSocketClient.ConnectionListen
             when (json.optString("type")) {
                 "assigned" -> {
                     playerIndex = json.optInt("player", 0)
-                    val assignedUdpPort = json.optInt("udp_port", udpPort)
-                    val status = json.optString("status", "ok")
-
-                    runOnUiThread {
-                        if (status == "ok") {
-                            playerIndicator.text = "P${playerIndex + 1}"
-                            playerIndicator.visibility = View.VISIBLE
-                            // Start UDP sender
-                            startUdpSender(assignedUdpPort)
-                            
-                            // Start WebRTC connection
+                    val port = json.optInt("udp_port", udpPort)
+                    if (json.optString("status") == "ok") {
+                        lifecycleScope.launch(Dispatchers.Main) {
+                            udpSender?.stop()
+                            udpSender = UdpInputSender(serverIp, port, playerIndex)
+                            udpSender?.start()
                             webRtcClient?.startCall(playerIndex)
-                        } else {
-                            Toast.makeText(this, json.optString("message", "Slot full"), Toast.LENGTH_LONG).show()
+                            inputSender = InputSender(udpSender, wsClient, webRtcClient)
                         }
                     }
                 }
+                "webrtc_answer" -> webRtcClient?.setRemoteDescription(json.optString("sdp"))
                 "rumble" -> {
-                    val small = json.optInt("small_motor", 0)
-                    val large = json.optInt("large_motor", 0)
-                    val durationMs = json.optLong("duration_ms", 200)
-                    if (profile.vibrationEnabled) {
-                        triggerVibration(small, large, durationMs)
-                    }
-                }
-                "profile" -> {
-                    val profileJson = json.optJSONObject("data")?.toString()
-                    if (profileJson != null) {
-                        runOnUiThread {
-                            profile = Gson().fromJson(profileJson, ControllerProfile::class.java)
-                            // Apply new profile settings instantly
-                            sendIntervalMs = (1000L / profile.sendRateHz).coerceAtLeast(8L)
-                            gyroEnabled = profile.gyroEnabled
-                            gyroManager.sensitivity = profile.gyroSensitivity
-                            updateGyroButton()
-                            if (gyroEnabled) gyroManager.start() else gyroManager.stop()
-                            Toast.makeText(this@ControllerActivity, "Profile applied: ${profile.name}", Toast.LENGTH_SHORT).show()
-                        }
-                    }
-                }
-                "webrtc_answer" -> {
-                    val sdp = json.optString("sdp")
-                    webRtcClient?.setRemoteDescription(sdp)
+                    val duration = json.optLong("duration_ms", 200)
+                    haptics.vibrate(if (duration > 300) HapticsManager.Type.DAMAGE else HapticsManager.Type.STRONG_SHOOT)
                 }
             }
         } catch (_: Exception) {}
     }
 
-    private fun startUdpSender(port: Int) {
-        udpSender?.stop()
-        udpSender = UdpInputSender(serverIp, port, playerIndex).apply {
-            sendRateHz = profile.sendRateHz
-            start()
-        }
-    }
-
-    // ── Connection callbacks ─────────────────────────────────────────
-
     override fun onConnected() {
-        // Send registration
+        val deviceId = getSharedPreferences("kinetix", MODE_PRIVATE)
+            .getString("device_id", UUID.randomUUID().toString())
         val regMsg = JSONObject().apply {
             put("type", "register")
             put("device_id", deviceId)
             put("device_name", "${Build.MANUFACTURER} ${Build.MODEL}")
         }
-        wsClient.sendRaw(regMsg.toString())
+        wsClient?.sendRaw(regMsg.toString())
+        lifecycleScope.launch(Dispatchers.Main) {
+            Toast.makeText(this@ControllerActivity, "Connected to Kinetix", Toast.LENGTH_SHORT).show()
+        }
+    }
+    override fun onDisconnected(reason: String) {}
+    override fun onError(error: String) {}
 
-        runOnUiThread {
-            connectionIndicator.text = "● Connected"
-            connectionIndicator.setTextColor(0xFF2ECC71.toInt())
+    // ── Lifecycle ──
+
+    override fun onResume() {
+        super.onResume()
+        startInputLoop()
+        goImmersive()
+        if (!gyroManager.enabled && ControllerProfile.getActive(this).gyroEnabled && gyroManager.isAvailable) {
+            gyroManager.start()
         }
     }
 
-    override fun onDisconnected(reason: String) {
-        runOnUiThread {
-            connectionIndicator.text = "● Reconnecting…"
-            connectionIndicator.setTextColor(0xFFF39C12.toInt())
-        }
+    override fun onPause() {
+        super.onPause()
+        inputLoopJob?.cancel()
+        if (gyroManager.enabled) gyroManager.stop()
     }
 
-    override fun onError(error: String) {
-        runOnUiThread {
-            connectionIndicator.text = "● Connection failed"
-            connectionIndicator.setTextColor(0xFFE74C3C.toInt())
-            Toast.makeText(this, "Connection failed: $error", Toast.LENGTH_LONG).show()
-        }
+    override fun onDestroy() {
+        super.onDestroy()
+        inputLoopJob?.cancel()
+        udpSender?.stop()
+        webRtcClient?.close()
+        wsClient?.disconnect()
     }
-
-    // ── Vibration ────────────────────────────────────────────────────
-
-    @Suppress("DEPRECATION")
-    private fun triggerVibration(small: Int, large: Int, durationMs: Long) {
-        val intensity = ((small + large) / 2).coerceIn(0, 255)
-        val scaledIntensity = (intensity * profile.vibrationIntensity).toInt().coerceIn(1, 255)
-
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            vibrator?.vibrate(
-                VibrationEffect.createOneShot(durationMs, scaledIntensity)
-            )
-        } else {
-            vibrator?.vibrate(durationMs)
-        }
-    }
-
-    // ── Gyro UI ──────────────────────────────────────────────────────
-
-    private fun updateGyroButton() {
-        gyroToggle.alpha = if (gyroEnabled) 1.0f else 0.4f
-    }
-
-    // ── Battery ──────────────────────────────────────────────────────
-
-    private fun updateBattery() {
-        val bm = getSystemService(BATTERY_SERVICE) as? android.os.BatteryManager
-        val level = bm?.getIntProperty(android.os.BatteryManager.BATTERY_PROPERTY_CAPACITY) ?: -1
-        if (level >= 0) {
-            batteryIndicator.text = "🔋 $level%"
-            batteryIndicator.visibility = View.VISIBLE
-            batteryIndicator.setTextColor(
-                when {
-                    level <= 15 -> 0xFFE74C3C.toInt()
-                    level <= 30 -> 0xFFF39C12.toInt()
-                    else -> 0xFF2ECC71.toInt()
-                }
-            )
-        }
-        // Update every 60 seconds
-        handler.postDelayed({ updateBattery() }, 60_000)
-    }
-
-    // ── Immersive mode ───────────────────────────────────────────────
 
     private fun goImmersive() {
         androidx.core.view.WindowCompat.setDecorFitsSystemWindows(window, false)
-        androidx.core.view.WindowInsetsControllerCompat(window, window.decorView).let { controller ->
-            controller.hide(androidx.core.view.WindowInsetsCompat.Type.systemBars())
-            controller.systemBarsBehavior = androidx.core.view.WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+        androidx.core.view.WindowInsetsControllerCompat(window, window.decorView).let { c ->
+            c.hide(androidx.core.view.WindowInsetsCompat.Type.systemBars())
+            c.systemBarsBehavior = androidx.core.view.WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
         }
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-            window.attributes.layoutInDisplayCutoutMode = android.view.WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES
+            window.attributes.layoutInDisplayCutoutMode =
+                android.view.WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES
         }
         supportActionBar?.hide()
     }

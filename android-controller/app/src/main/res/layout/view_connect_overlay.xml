@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#DD000000"
+    android:clickable="true"
+    android:focusable="true">
+    
+    <LinearLayout
+        android:layout_width="320dp"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:orientation="vertical"
+        android:background="@drawable/bg_dialog_rounded"
+        android:padding="24dp">
+        
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Connect to Server"
+            android:textColor="#FFF"
+            android:textSize="20sp"
+            android:textStyle="bold"
+            android:layout_marginBottom="16dp"/>
+            
+        <ProgressBar
+            android:id="@+id/scan_progress"
+            android:layout_width="24dp"
+            android:layout_height="24dp"
+            android:layout_gravity="center_horizontal"
+            android:layout_marginBottom="8dp"/>
+            
+        <TextView
+            android:id="@+id/scan_status"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Scanning..."
+            android:textColor="#A0A0A0"
+            android:gravity="center"
+            android:layout_marginBottom="16dp"/>
+            
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/server_list"
+            android:layout_width="match_parent"
+            android:layout_height="120dp"
+            android:layout_marginBottom="16dp"/>
+            
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Or Enter Manually:"
+            android:textColor="#7A7A9E"
+            android:textSize="12sp"
+            android:layout_marginBottom="8dp"/>
+            
+        <EditText
+            android:id="@+id/ip_input"
+            android:layout_width="match_parent"
+            android:layout_height="50dp"
+            android:hint="192.168.x.x"
+            android:textColor="#FFF"
+            android:textColorHint="#666"
+            android:backgroundTint="#FFF"
+            android:inputType="text"/>
+            
+        <EditText
+            android:id="@+id/port_input"
+            android:layout_width="match_parent"
+            android:layout_height="50dp"
+            android:hint="Port (8765)"
+            android:textColor="#FFF"
+            android:textColorHint="#666"
+            android:backgroundTint="#FFF"
+            android:inputType="number"/>
+            
+        <Button
+            android:id="@+id/connect_btn"
+            android:layout_width="match_parent"
+            android:layout_height="50dp"
+            android:text="Manual Connect"
+            android:backgroundTint="#E94560"
+            android:textColor="#FFF"
+            android:layout_marginTop="16dp"/>
+            
+        <Button
+            android:id="@+id/close_overlay_btn"
+            android:layout_width="match_parent"
+            android:layout_height="50dp"
+            android:text="Close"
+            android:backgroundTint="#3A3A4E"
+            android:textColor="#FFF"
+            android:layout_marginTop="8dp"/>
+    </LinearLayout>
+</FrameLayout>
