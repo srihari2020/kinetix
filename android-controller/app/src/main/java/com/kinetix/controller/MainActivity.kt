@@ -1,122 +1,221 @@
-package com.kinetix.controller
+package com.kinetix.controller.v2
 
+import android.annotation.SuppressLint
 import android.content.Intent
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.view.LayoutInflater
+import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
+import android.view.animation.OvershootInterpolator
 import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 
 /**
- * Connection screen with auto-discovery + manual IP entry.
- *
- * On launch, scans the LAN for Kinetix servers via UDP broadcast.
- * Discovered servers appear in a list; the user taps to connect.
- * A manual IP fallback is always available.
+ * Home Screen — DroidJoy style.
+ * 4 neon circular buttons: Gamepad, Customize, Connect, Settings.
  */
 class MainActivity : AppCompatActivity(), ServerDiscovery.DiscoveryListener {
 
+    private lateinit var connectOverlay: View
     private lateinit var serverList: RecyclerView
     private lateinit var scanProgress: ProgressBar
     private lateinit var scanStatus: TextView
-    private lateinit var manualSection: LinearLayout
     private lateinit var ipInput: EditText
     private lateinit var portInput: EditText
-    private lateinit var connectBtn: Button
-    private lateinit var settingsBtn: ImageButton
-    private lateinit var profileSpinner: Spinner
-    private lateinit var statusText: TextView
 
     private val servers = mutableListOf<ServerDiscovery.ServerInfo>()
     private lateinit var adapter: ServerAdapter
     private var discovery: ServerDiscovery? = null
+    private var testWsClient: WebSocketClient? = null
     private val handler = Handler(Looper.getMainLooper())
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
+        supportActionBar?.hide()
 
-        // Bind views
+        connectOverlay = findViewById(R.id.connect_overlay)
         serverList = findViewById(R.id.server_list)
         scanProgress = findViewById(R.id.scan_progress)
         scanStatus = findViewById(R.id.scan_status)
-        manualSection = findViewById(R.id.manual_section)
         ipInput = findViewById(R.id.ip_input)
         portInput = findViewById(R.id.port_input)
-        connectBtn = findViewById(R.id.connect_btn)
-        settingsBtn = findViewById(R.id.settings_btn)
-        profileSpinner = findViewById(R.id.profile_spinner)
-        statusText = findViewById(R.id.status_text)
 
-        // Server list
-        adapter = ServerAdapter(servers) { server -> connectTo(server) }
-        serverList.layoutManager = LinearLayoutManager(this)
-        serverList.adapter = adapter
-
-        // Restore prefs
-        val prefs = getSharedPreferences("kinetix", MODE_PRIVATE)
-        ipInput.setText(prefs.getString("last_ip", ""))
-        portInput.setText(prefs.getString("last_port", "8765"))
-
-        // Profile spinner
-        setupProfileSpinner()
-
-        // Manual connect
-        connectBtn.setOnClickListener {
-            val ip = ipInput.text.toString().trim()
-            val port = portInput.text.toString().trim()
-            if (ip.isEmpty()) {
-                Toast.makeText(this, "Enter the server IP address", Toast.LENGTH_SHORT).show()
-                return@setOnClickListener
+        // ── Neon Buttons ──
+        setupNeonButton(findViewById(R.id.btn_gamepad)) {
+            val prefs = getSharedPreferences("kinetix", MODE_PRIVATE)
+            val ip = prefs.getString("last_ip", "")
+            if (ip.isNullOrEmpty()) {
+                Toast.makeText(this, "Please Connect to a server first", Toast.LENGTH_SHORT).show()
+                showConnectOverlay()
+            } else {
+                openController()
             }
-            val portNum = port.toIntOrNull() ?: 8765
-            prefs.edit()
-                .putString("last_ip", ip)
-                .putString("last_port", portNum.toString())
-                .apply()
-            connectTo(ServerDiscovery.ServerInfo(ip, portNum, portNum + 978))  // 8765 → 5743
         }
-
-        // Settings
-        settingsBtn.setOnClickListener {
+        setupNeonButton(findViewById(R.id.btn_customize)) {
+            openEditor()
+        }
+        setupNeonButton(findViewById(R.id.btn_connect)) {
+            showConnectOverlay()
+        }
+        setupNeonButton(findViewById(R.id.btn_settings)) {
             startActivity(Intent(this, SettingsActivity::class.java))
         }
 
-        // Toggle manual section
-        findViewById<View>(R.id.manual_toggle)?.setOnClickListener {
-            manualSection.visibility =
-                if (manualSection.visibility == View.VISIBLE) View.GONE else View.VISIBLE
+        // ── Connect Overlay ──
+        findViewById<Button>(R.id.close_overlay_btn).setOnClickListener { hideConnectOverlay() }
+        findViewById<Button>(R.id.connect_btn).setOnClickListener {
+            val ip = ipInput.text.toString().trim()
+            val portText = portInput.text.toString().trim()
+            if (ip.isEmpty() || !isValidIp(ip)) {
+                Toast.makeText(this, "Valid IP required", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
+            val portNum = portText.toIntOrNull() ?: 8765
+            testServerConnection(ip, portNum)
         }
 
-        // Start discovery
+        adapter = ServerAdapter(servers) { server ->
+            testServerConnection(server.ip, server.wsPort)
+        }
+        serverList.layoutManager = LinearLayoutManager(this)
+        serverList.adapter = adapter
+
+        val prefs = getSharedPreferences("kinetix", MODE_PRIVATE)
+        ipInput.setText(prefs.getString("last_ip", ""))
+        portInput.setText(prefs.getString("last_port", "8765"))
+        
+        updateStatusText()
+    }
+    
+    private fun updateStatusText() {
+        val prefs = getSharedPreferences("kinetix", MODE_PRIVATE)
+        val ip = prefs.getString("last_ip", "")
+        val statusText = findViewById<TextView>(R.id.status_text)
+        if (ip.isNullOrEmpty()) {
+            statusText.text = "Tap Connect to find your PC • Customize to edit layout"
+            statusText.setTextColor(0xFF5A5A7E.toInt())
+        } else {
+            statusText.text = "🟢 Connected to $ip • Tap Gamepad to play"
+            statusText.setTextColor(0xFF2ECC71.toInt())
+        }
+    }
+
+    // ── Navigation ──
+
+    private fun openController() {
+        val prefs = getSharedPreferences("kinetix", MODE_PRIVATE)
+        val ip = prefs.getString("last_ip", "192.168.1.100") ?: "192.168.1.100"
+        val port = prefs.getString("last_port", "8765")?.toIntOrNull() ?: 8765
+        val profile = ControllerProfile.getActive(this)
+        startActivity(Intent(this, ControllerActivity::class.java).apply {
+            putExtra("server_ip", ip)
+            putExtra("ws_port", port)
+            putExtra("udp_port", port + 978)
+            putExtra("profile_name", profile.name)
+        })
+    }
+
+    private fun openEditor() {
+        startActivity(Intent(this, EditorActivity::class.java))
+    }
+
+    // ── Neon button touch ──
+
+    @SuppressLint("ClickableViewAccessibility")
+    private fun setupNeonButton(view: View, onClick: () -> Unit) {
+        view.setOnTouchListener { v, event ->
+            when (event.action) {
+                MotionEvent.ACTION_DOWN ->
+                    v.animate().scaleX(0.90f).scaleY(0.90f).setDuration(80).setInterpolator(OvershootInterpolator()).start()
+                MotionEvent.ACTION_UP -> {
+                    v.animate().scaleX(1.0f).scaleY(1.0f).setDuration(120).setInterpolator(OvershootInterpolator()).start()
+                    onClick()
+                }
+                MotionEvent.ACTION_CANCEL ->
+                    v.animate().scaleX(1.0f).scaleY(1.0f).setDuration(120).setInterpolator(OvershootInterpolator()).start()
+            }
+            true
+        }
+    }
+
+    // ── Connect Overlay ──
+
+    private fun showConnectOverlay() {
+        connectOverlay.visibility = View.VISIBLE
+        connectOverlay.alpha = 0f
+        connectOverlay.animate().alpha(1f).setDuration(200).start()
         startDiscovery()
     }
 
-    override fun onResume() {
-        super.onResume()
-        setupProfileSpinner()  // Refresh after settings change
-    }
-
-    override fun onDestroy() {
-        super.onDestroy()
+    private fun hideConnectOverlay() {
         discovery?.stopScan()
+        connectOverlay.animate().alpha(0f).setDuration(200).withEndAction {
+            connectOverlay.visibility = View.GONE
+        }.start()
     }
 
-    // ── Discovery ────────────────────────────────────────────────────
+    private fun saveLastConnection(ip: String, port: Int) {
+        getSharedPreferences("kinetix", MODE_PRIVATE).edit()
+            .putString("last_ip", ip)
+            .putString("last_port", port.toString())
+            .apply()
+        updateStatusText()
+    }
+    
+    private fun testServerConnection(ip: String, port: Int) {
+        scanStatus.text = "Connecting to $ip..."
+        scanProgress.visibility = View.VISIBLE
+        
+        testWsClient?.disconnect()
+        testWsClient = WebSocketClient("ws://$ip:$port", object : WebSocketClient.ConnectionListener {
+            override fun onConnected() {
+                handler.post {
+                    saveLastConnection(ip, port)
+                    hideConnectOverlay()
+                    Toast.makeText(this@MainActivity, "Connected to $ip successfully!", Toast.LENGTH_SHORT).show()
+                    testWsClient?.disconnect()
+                    testWsClient = null
+                }
+            }
+
+            override fun onDisconnected(reason: String) {
+                // Ignore, handled by error mostly
+            }
+
+            override fun onError(error: String) {
+                handler.post {
+                    scanStatus.text = "Failed to connect to $ip"
+                    scanProgress.visibility = View.GONE
+                    Toast.makeText(this@MainActivity, "Connection failed: $error", Toast.LENGTH_SHORT).show()
+                    testWsClient?.disconnect()
+                    testWsClient = null
+                }
+            }
+        })
+        testWsClient?.connect()
+    }
+
+    // ── Discovery ──
 
     private fun startDiscovery() {
         servers.clear()
         adapter.notifyDataSetChanged()
         scanProgress.visibility = View.VISIBLE
         scanStatus.text = "Scanning for servers…"
-
         discovery = ServerDiscovery(this, this)
         discovery?.startScan()
+    }
+
+    private fun isValidIp(ip: String): Boolean {
+        val parts = ip.split(".")
+        if (parts.size != 4) return false
+        return try { parts.all { it.toInt() in 0..255 } } catch (_: Exception) { false }
     }
 
     override fun onServerFound(server: ServerDiscovery.ServerInfo) {
@@ -128,81 +227,40 @@ class MainActivity : AppCompatActivity(), ServerDiscovery.DiscoveryListener {
             }
         }
     }
-
     override fun onDiscoveryFinished() {
         handler.post {
             scanProgress.visibility = View.GONE
-            if (servers.isEmpty()) {
-                scanStatus.text = "No servers found – use manual entry below"
-                manualSection.visibility = View.VISIBLE
-            } else {
-                scanStatus.text = "${servers.size} server(s) found"
-            }
+            scanStatus.text = if (servers.isEmpty()) "No servers found." else "${servers.size} server(s) found"
         }
     }
-
     override fun onDiscoveryError(error: String) {
         handler.post {
             scanProgress.visibility = View.GONE
-            scanStatus.text = "Discovery error: $error"
-            manualSection.visibility = View.VISIBLE
+            scanStatus.text = "Error: $error"
         }
     }
 
-    // ── Connect ──────────────────────────────────────────────────────
-
-    private fun connectTo(server: ServerDiscovery.ServerInfo) {
-        val profile = ControllerProfile.getActive(this)
-        val intent = Intent(this, ControllerActivity::class.java).apply {
-            putExtra("server_ip", server.ip)
-            putExtra("ws_port", server.wsPort)
-            putExtra("udp_port", server.udpPort)
-            putExtra("server_url", "ws://${server.ip}:${server.wsPort}")
-            putExtra("profile_name", profile.name)
-        }
-        startActivity(intent)
+    override fun onDestroy() {
+        super.onDestroy()
+        discovery?.stopScan()
+        testWsClient?.disconnect()
     }
 
-    // ── Profiles ─────────────────────────────────────────────────────
-
-    private fun setupProfileSpinner() {
-        val profiles = ControllerProfile.loadAll(this)
-        val names = profiles.map { it.name }
-        val ad = ArrayAdapter(this, android.R.layout.simple_spinner_item, names)
-        ad.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
-        profileSpinner.adapter = ad
-
-        val active = ControllerProfile.getActive(this).name
-        val idx = names.indexOf(active).coerceAtLeast(0)
-        profileSpinner.setSelection(idx)
-        profileSpinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
-            override fun onItemSelected(parent: AdapterView<*>?, v: View?, pos: Int, id: Long) {
-                ControllerProfile.setActive(this@MainActivity, names[pos])
-            }
-            override fun onNothingSelected(parent: AdapterView<*>?) {}
-        }
-    }
-
-    // ── Server list adapter ──────────────────────────────────────────
+    // ── Adapter ──
 
     private class ServerAdapter(
         private val items: List<ServerDiscovery.ServerInfo>,
         private val onClick: (ServerDiscovery.ServerInfo) -> Unit
     ) : RecyclerView.Adapter<ServerAdapter.VH>() {
-
         class VH(view: View) : RecyclerView.ViewHolder(view) {
             val name: TextView = view.findViewById(android.R.id.text1)
             val detail: TextView = view.findViewById(android.R.id.text2)
         }
-
         override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): VH {
-            val view = LayoutInflater.from(parent.context)
-                .inflate(android.R.layout.simple_list_item_2, parent, false)
-            // Style for dark theme
+            val view = LayoutInflater.from(parent.context).inflate(android.R.layout.simple_list_item_2, parent, false)
             view.setBackgroundResource(android.R.color.transparent)
             return VH(view)
         }
-
         override fun onBindViewHolder(holder: VH, position: Int) {
             val server = items[position]
             holder.name.text = server.displayName
@@ -211,7 +269,6 @@ class MainActivity : AppCompatActivity(), ServerDiscovery.DiscoveryListener {
             holder.detail.setTextColor(0xFF7A7A9E.toInt())
             holder.itemView.setOnClickListener { onClick(server) }
         }
-
         override fun getItemCount() = items.size
     }
 }
