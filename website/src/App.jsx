@@ -133,7 +133,7 @@ export default function App() {
                 <FaWindows size={48} style={{ marginBottom: '1.5rem', opacity: 0.8 }} />
                 <h3 style={{ marginBottom: '1rem' }}>PC Server</h3>
                 <p style={{ color: 'var(--text-muted)', marginBottom: '2rem' }}>All-in-one Electron dashboard and ViGEmBus backend.</p>
-                <a href="https://github.com/srihari2020/kinetix/releases/latest/download/KinetixSetup.exe" className="btn-neon" style={{ width: '100%', justifyContent: 'center' }}>Download .EXE</a>
+                <a href="https://github.com/srihari2020/kinetix/releases/latest/download/kinetix-pc.zip" className="btn-neon" style={{ width: '100%', justifyContent: 'center' }}>Download .ZIP</a>
               </div>
 
               <div className="glass-panel" style={{ flex: '1', minWidth: '300px', maxWidth: '400px' }}>
