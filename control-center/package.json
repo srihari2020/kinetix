@@ -26,8 +26,18 @@
     "asar": true,
     "compression": "maximum",
     "win": {
-      "target": "portable",
+      "target": "nsis",
       "icon": "public/favicon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": true,
+      "allowToChangeInstallationDirectory": true,
+      "runAfterFinish": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Kinetix Control Center",
+      "include": "build/installer.nsh"
     },
     "extraResources": [
       {
@@ -42,6 +52,13 @@
         "to": "plugins",
         "filter": [
           "**/*"
+        ]
+      },
+      {
+        "from": "installer",
+        "to": "installer",
+        "filter": [
+          "ViGEmBus_Setup_x64.msi"
         ]
       }
     ]

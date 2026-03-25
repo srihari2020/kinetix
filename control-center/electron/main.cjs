@@ -56,6 +56,11 @@ function startServer() {
         serverProcess.on('close', (code) => {
             console.log(`Python process exited with code ${code}`);
         });
+
+        serverProcess.on('error', (err) => {
+            console.error('Failed to spawn/run server process:', err);
+        });
+
     } catch (error) {
         console.error("Failed to start backend server:", error);
     }
