@@ -42,6 +42,8 @@ jobs:
       - name: Install dependencies
         working-directory: pc-server
         run: pip install -r requirements.txt
+        env:
+          VGAMEPAD_SKIP_VIGEMBUS_INSTALL: "true"
 
       - name: Build EXE with PyInstaller
         working-directory: pc-server

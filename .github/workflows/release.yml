@@ -67,10 +67,14 @@ jobs:
       - name: Install vgamepad wheel first
         working-directory: pc-server
         run: pip install vgamepad==0.1.0
+        env:
+          VGAMEPAD_SKIP_VIGEMBUS_INSTALL: "true"
 
       - name: Install dependencies
         working-directory: pc-server
         run: pip install -r requirements.txt
+        env:
+          VGAMEPAD_SKIP_VIGEMBUS_INSTALL: "true"
 
       - name: Build EXE
         working-directory: pc-server
