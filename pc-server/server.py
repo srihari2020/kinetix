@@ -26,9 +26,17 @@ import socket
 import sys
 import threading
 import time
-from typing import Dict, Optional, Set
+from typing import Any, Dict, Optional, Set
 
 import websockets
+
+try:
+    WebSocketServerProtocol = websockets.WebSocketServerProtocol
+except AttributeError:
+    try:
+        from websockets.legacy.server import WebSocketServerProtocol
+    except ImportError:
+        WebSocketServerProtocol = Any  # type: ignore
 
 from controller_mapper import update_from_json, parse_binary, update_from_binary
 from device_manager import DeviceManager
@@ -48,10 +56,11 @@ discovery: DiscoveryBroadcaster | None = None
 webrtc_mgr: webrtc_server.WebRTCManager | None = None
 
 # WebSocket → device_id mapping for cleanup
-_ws_to_device: Dict[websockets.WebSocketServerProtocol, str] = {}
+_ws_to_device: Dict[WebSocketServerProtocol, str] = {}
 
 # Set of active WebSocket connections (for broadcasting rumble etc.)
-_ws_clients: Set[websockets.WebSocketServerProtocol] = set()
+_ws_clients: Set[WebSocketServerProtocol] = set()
+
 
 # ------------------------------------------------------------------ #
 #  Network helpers                                                    #
