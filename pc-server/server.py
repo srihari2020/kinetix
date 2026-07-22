@@ -59,15 +59,32 @@ _ws_clients: Set[websockets.WebSocketServerProtocol] = set()
 
 
 def get_local_ip() -> str:
-    """Return the machine's LAN IP address (best-effort)."""
+    """Return the machine's LAN IP address (best-effort) without requiring internet."""
+    # 1. Try to query routing table using dummy UDP connections.
+    # Since UDP is connectionless, connect() only prompts the OS to choose the outgoing interface.
+    # We try both a private IP (which works if offline but connected to a router/LAN) and public IP.
+    for target in [("10.254.254.254", 1), ("192.168.254.254", 1), ("8.8.8.8", 80)]:
+        try:
+            s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+            s.connect(target)
+            ip = s.getsockname()[0]
+            s.close()
+            if ip and ip != "127.0.0.1":
+                return ip
+        except Exception:
+            continue
+
+    # 2. Fallback to enumerating local hostname-associated IPs
     try:
-        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        s.connect(("8.8.8.8", 80))
-        ip = s.getsockname()[0]
-        s.close()
-        return ip
+        hostname = socket.gethostname()
+        for ip in socket.gethostbyname_ex(hostname)[2]:
+            if not ip.startswith("127."):
+                return ip
     except Exception:
-        return "127.0.0.1"
+        pass
+
+    return "127.0.0.1"
+
 
 
 def resource_path(relative: str) -> str:
